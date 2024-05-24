@@ -1,0 +1,28 @@
+{# vim:set softtabstop=2: -#}
+<h2>Sections:</h2>
+<h3>New Section</h3>
+
+{% if user %}
+<form method="post" action="/s">
+  <label>
+    Title:<br/>
+    <input name="title" placeholder="Section Title" maxlength="255" size="80"/><br/>
+  </label>
+  <label>
+    Description:<br/>
+    <textarea name="description" placeholder="Section Descripion" cols="80"></textarea><br/>
+  </label>
+  <input value="Create" type="submit">
+</form>
+{% else %}
+<p>You have to be log in...</p>
+{% endif %}
+
+{% for section in sections if section.id != 1 %}
+<a href="/s/{{section.title}}"><h3>{{ section.title }}</h3></a>
+<p>{{ section.description }}</p>
+{% endfor %}
+
+{% if total < 2 %}
+<p>No Sections here...</p>
+{% endif %}

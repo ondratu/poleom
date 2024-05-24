@@ -1,0 +1,15 @@
+{# vim:set softtabstop=2: -#}
+{% set page = "" %}
+{% include("_header.html") %}
+
+<ul class="breadcrumb">
+  <li><a href="/">Root</a></li>
+  <li><a href="/s/{{ section.title }}"> {{ section.title }}</a></li>
+  <li class="active">{{ topic.title }}</li>
+</ul>
+
+<h1>{{ topic.title }}</h1>
+
+{% include("_posts.html") %}
+
+{% include("_footer.html") %}

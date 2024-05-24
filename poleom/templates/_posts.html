@@ -1,0 +1,26 @@
+{# vim:set softtabstop=2: -#}
+<h2>Posts:</h2>
+
+{% for post in posts %}
+<a class="anchor" id="{{ post.hexdigest }}"></a>
+<span rel="author">{{ post.user_name }}</span>
+<span>{{ post.created }}</span>
+<p>{{ post.body }}</p>
+<p>{{ post.user_signature or "" }}</p>
+{% endfor %}
+
+{% include("_pager.html") %}
+
+<h3>New Post</h3>
+
+{% if user %}
+<form method="post" action="/s/{{ section.title }}/{{ topic.title }}">
+  <label>
+    Post:<br/>
+    <textarea name="body" placeholder="Your post message" cols="80"></textarea><br/>
+  </label>
+  <input value="Create" type="submit">
+</form>
+{% else %}
+<p>You have to be log in...</p>
+{% endif %}

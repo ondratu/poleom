@@ -1,0 +1,133 @@
+[project]
+name = "Poleom"
+description = "Simple Forum web application"
+readme = "README.md"
+
+authors = [
+  {name = "Ondřej Tůma", email = "mcbig@zeropage.cz"},
+]
+maintainers = [
+  {name = "Ondřej Tůma", email = "mcbig@zeropage.cz"},
+]
+
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Natural Language :: English",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dynamic = [
+  "version",
+]
+
+dependencies = [
+  "PoorWSGI",
+  "gevent",
+  "bcrypt",
+  "jinja2_template_info",
+  "gevent_mysqldb @ git+https://github.com/axiros/gevent_mysqldb.git"
+]
+
+[tool.setuptools]
+packages = ["poleom"]
+
+[tool.setuptools.package-data]
+"poleom" = ["py.typed"]
+
+[project.urls]
+"Repository" = "https://github.com/ondratu/poleom"
+"Bug Tracker" = "https://github.com/ondratu/poleom/issues"
+
+[project.optional-dependencies]
+lint = [
+    "flake8",
+    "isort",
+    "ruff",
+    "pylint",
+]
+
+typecheck = [
+    "mypy",
+]
+
+format = [
+    "yapf",
+]
+
+test = [
+    "pytest",
+]
+
+server = [
+  "uwsgi"
+]
+
+[tool.isort]
+multi_line_output = 5 # https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html#5-hanging-grid-grouped
+
+[tool.yapf]
+based_on_style = "pep8"
+
+[tool.ruff]
+line-length = 79
+
+lint.select = [
+    "F",    # pyflakes
+    "E",    # pycodestyle
+    "W",    # pycodestyle
+    "C90",  # mccabe
+    "I",    # isort
+    "N",    # pep8-naming
+#    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+    # "ANN",  # flake8-annotations
+    "S",    # flake8-bandit
+    # "BLE",  # flake8-blind-except
+    # "FBT",  # flake8-boolean-trap
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "COM",  # flake8-commas
+    "C4",   # flake8-comprehensions
+    # "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "DJ",   # flake8-django
+    "EM",   # flake8-errmsg
+    "EXE",  # flake8-executable
+    "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PYI",  # flake8-pyi
+    "PT",   # flake8-pytest-style
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SIM",  # flake8-simplify
+    # "TID",  # flake8-tidy-imports
+    "TCH",  # flake8-type-checking
+    "INT",  # flake8-gettext
+    "ARG",  # flake8-unused-arguments
+    # "PTH",  # flake8-use-pathlib
+    "ERA",  # eradicate
+    "PD",   # pandas-vet
+    "PGH",  # pygrep-hooks
+    "PL",   # Pylint
+    "TRY",  # tryceratops
+    "FLY",  # flynt
+    "NPY",  # NumPy-specific rules
+    "RUF",  # Ruff-specific rules
+]
+
+lint.ignore = [
+    "S101", # use assert
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "SLF001", # Private member accessed - checkd by pylint
+]
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = ["fixme"]

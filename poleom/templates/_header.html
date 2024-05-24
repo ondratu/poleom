@@ -1,0 +1,35 @@
+{# vim:set softtabstop=2: -#}
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- needed for mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <meta content="Forum" lang="en" name="description" property="og:description">
+    <meta content="Forum" name="og:title" property="og:title">
+    <meta content="Forum" name="twitter:title" property="twitter:title">
+    <meta content="website" name="og:type" property="og:type">
+    <meta content="/favicon.ico" name="og:image" property="og:image">
+    <meta content="summary" name="twitter:card" property="twitter:card">
+    <meta content="@mcbig_cz" name="twitter:creator" property="twitter:creator">
+    <meta content="Forum" name="keywords">
+    <link href="/poleom.css" rel="stylesheet">
+    <title>Poleom</title>
+  </head>
+  <body>
+    <nav>
+      <div class="page-width">
+        <div class="title">Poleom</div>
+      {% if user %}
+        {{ user.name }}  <a href="/logout">Logout</a>
+      {% else %}
+        <form method="post" action="/login">
+          <input name="email" type="email" placeholder="jon.doe@example.com"/>
+          <input name="password" type="password"/>
+          <input value="Login" type="submit"/>
+        </form>
+      {% endif %}
+      </div>
+    </nav>
+
+    <div class="page-width">

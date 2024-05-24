@@ -1,0 +1,28 @@
+{# vim:set softtabstop=2: -#}
+{%- set params = pager.params + '&amp;' if length(pager.params) else '' %}
+{%- set ordering = "" %}
+{%- if pager.order != pager.d_order %}
+    {% set ordering = "order="+pager.order+"&amp;" %}
+{%- if pager.sort != pager.d_sort %}
+    {% set ordering = ordering + "sort="+pager.sort+"&amp;" %}
+{%- endif %}
+{%- endif %}
+      <ul class="pager">
+{%- if pager.pages > 0 %}
+{%- if pager.offset > 0 %}
+        <li><a href="?{{ params }}{{ ordering }}offset=0">&laquo; {{ _("First") }}</a></li>
+        <li><a href="?{{ params }}{{ ordering }}offset={{ pager.offset - pager.limit }}">&#60; {{ _("Previous") }}</a></li>
+{%- else %}
+        <li class="disabled"><a>&laquo; {{ _("First") }}</a></li>
+        <li class="disabled"><a>&#60; {{ _("Previous") }}</a></li>
+{%- endif %}
+        <li class="pages"><!-- {{ _("Page") }}: {{ pager.page }} {{ _("from") }} {{ pager.pages }} --></li>
+{%- if pager.page < pager.pages %}
+        <li><a href="?{{ params }}{{ ordering }}offset={{ pager.limit * (pager.page + 1) }}">{{ _("Next") }} &#62;</a></li>
+        <li><a href="?{{ params }}{{ ordering }}offset={{ pager.limit * pager.pages }}">{{ _("Last") }} &raquo;</a></li>
+{%- else %}
+        <li class="disabled"><a>{{ _("Next") }} &#62;</a></li>
+        <li class="disabled"><a>{{ _("Last") }} &raquo;</a></li>
+{%- endif %}
+{%- endif %}
+      </ul>
