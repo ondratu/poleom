@@ -1,0 +1,262 @@
+/* vim:set softtabstop=2: */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+nav {
+  height: 2em;
+  width: 100%;
+  z-index: 100;
+  top: 0;
+  text-align: right;
+  font-size: 130%;
+  line-height: 2em;
+  background: lightgrey;
+}
+nav > * > .title {
+  float: left;
+}
+nav > * > a, nav > * > a:visited {
+  color: blue;
+  top: 0;
+  padding: 0 0.25em 0 0.25em;
+}
+
+h1 {
+  margin: 0;
+}
+
+h3.section {
+  background-color: #ffccff;
+  border-radius: 4pt;
+  padding: 2pt 5pt;
+}
+
+h3.topic,
+#new-post {
+  background-color: #cceeff;
+  border-radius: 4pt;
+  padding: 2pt 5pt;
+  font-size: 14pt;
+}
+h3.section > small,
+h3.topic > div {
+  font-size: 10pt;
+  line-height: 14pt;
+  color: black;
+  font-weight: normal;
+}
+h3 > div {
+  display: grid;
+}
+h3 > div > * {
+  grid-row: 1;
+}
+h3 > div > [rel=dh-updated] {
+  margin: 0 5pt;
+  padding: 0 5pt;
+  border-left: 1px solid gray;
+  border-right: 1px solid gray;
+}
+h3 > div > [rel=author] {
+  min-width: 10em;
+}
+
+.pager {
+  padding-left: 0;
+  margin: 20px 0;
+  list-style: none;
+  text-align: center;
+}
+.pager li {
+  display: inline;
+}
+.pager li > a {
+  display: inline-block;
+  padding: 5px 14px;
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
+}
+.pager li > a:hover,
+.pager li > a:focus {
+  text-decoration: none;
+  background-color: #eeeeee;
+}
+.pager .disabled > a,
+.pager .disabled > a:hover,
+.pager .disabled > a:focus {
+  color: #777777;
+  background-color: #ffffff;
+  cursor: not-allowed;
+}
+.breadcrumb {
+  padding: 8px 15px;
+  margin-bottom: 20px;
+  list-style: none;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+.breadcrumb > li {
+  display: inline-block;
+}
+.breadcrumb > li + li:before {
+  content: "/\00a0";
+  padding: 0 5px;
+  color: #cccccc;
+}
+.breadcrumb > .active {
+  color: #777777;
+}
+
+.page-width {
+  max-width: 1024px;
+  margin: auto;
+}
+
+.page {
+    padding: 1em 1em 1em 1em;
+}
+
+
+a, a:visited, a:hover {
+  color: blue;
+}
+
+pre {
+  overflow: auto;
+}
+
+input {
+  padding: 5pt 8pt;
+  margin-bottom: 5pt;
+  max-width: calc(100% - 18pt);
+
+  border: 1px solid gray;
+  border-radius: 4pt;
+  font-size: 100%
+}
+
+.login > input {
+  padding: 2pt 4pt;
+  margin: 0;
+  font-size: 80%;
+}
+
+textarea {
+  padding: 5pt 8pt;
+  border: 1px solid gray;
+  border-radius: 4pt;
+  font-size: 110%
+}
+
+button {
+  border: 1px solid gray;
+  border-radius: 4pt;
+  font-size: 100%
+}
+
+.right {
+  float: right;
+}
+.left {
+  float: left;
+}
+
+h3:has(.updown-button){
+  background-color: #eee;
+  border: 1px solid #aaa;
+  border-top-left-radius: 4pt;
+  border-top-right-radius: 4pt;
+  margin-bottom: 0;
+  padding: 2pt 5pt;
+}
+h3:has(.updown-button)+div{
+  padding: 2pt;
+  display: none;
+  border-bottom: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  border-bottom-left-radius: 4pt;
+  border-bottom-right-radius: 4pt;
+}
+
+.post {
+  border: dotted 1px #777;
+  border-radius: 5pt;
+  margin-bottom: 5pt;
+}
+.post .header {
+  background: #ffff99;
+  font-size: 12pt;
+  padding: 2pt;
+}
+.post a[replay] {
+    text-decoration: underline;
+}
+.post .body {
+  clear: both;
+  padding: 2pt 16pt;
+  background: #eeeeee;
+}
+.post .signature {
+  margin-top: 0;
+  padding-top: 1pt;
+  border-top: 1px dotted #777;
+  min-height: 1em;
+}
+
+
+.editor {
+  display: grid;
+}
+.editor > * {
+  grid-column: 1;
+  grid-row: 1;
+  border: 1px solid #767676;
+  border-radius: 4pt;
+  padding: 5pt 8pt;
+}
+
+.source {
+  resize: none;
+  font-family: monospace;
+  background: transparent;
+  border-top-left-radius: 0;
+}
+
+.syntax {
+  color: #fff;
+  overflow: hidden;
+  font-family: monospace;
+  background: transparent;
+}
+.syntax .error-line {
+  background: #fbb;
+}
+
+.btn {
+  padding: 5pt 16pt;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+}
+.btn.active {
+  border: 1px solid gray;
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.in-replay > label {
+  font-size: 10pt;
+}
+.in-replay > input {
+  font-size: 10pt;
+  padding: 2pt 4pt;
+}

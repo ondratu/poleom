@@ -1,5 +1,6 @@
 """Topic record model."""
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
@@ -16,6 +17,8 @@ class Topic:
     section_id: int
     title: str
     count: int = field(init=False, default=0)
+    last: datetime | None = field(init=False)
+    user_name: str | None = field(init=False)
 
     @property
     def id(self):
@@ -91,9 +94,9 @@ class Topic:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                UPDATE sections SET
+                UPDATE topics SET
                     section_id=%(section_id)s, title=%(title)s
-                WHERE topic_id = %(id)d
+                WHERE topic_id = %(id)s
             """, self.dict())
 
     @staticmethod
@@ -101,8 +104,11 @@ class Topic:
         """Get list of topics from db."""
         with conn.cursor(DictCursor) as cur:
             cur.execute("""
-                SELECT *, count(P.topic_id) AS count FROM topics AS T
+                SELECT *, COUNT(P.topic_id) AS count, MAX(P.created) AS last,
+                    U.name
+                FROM topics AS T
                     LEFT JOIN posts AS P ON (P.topic_id = T.topic_id)
+                    LEFT JOIN users AS U ON (U.user_id = P.user_id)
                 WHERE section_id=%(section_id)s
                 GROUP BY T.topic_id
                 LIMIT %(OFFSET)s, %(LIMIT)s
@@ -110,6 +116,8 @@ class Topic:
             for row in cur:
                 topic = Topic(row["topic_id"], row["section_id"], row["title"])
                 topic.count = row["count"]
+                topic.last = row["last"]
+                topic.user_name = row["U.name"]
                 yield topic
 
             cur.execute("""

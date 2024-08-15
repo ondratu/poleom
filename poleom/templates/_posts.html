@@ -2,25 +2,62 @@
 <h2>Posts:</h2>
 
 {% for post in posts %}
-<a class="anchor" id="{{ post.hexdigest }}"></a>
-<span rel="author">{{ post.user_name }}</span>
-<span>{{ post.created }}</span>
-<p>{{ post.body }}</p>
-<p>{{ post.user_signature or "" }}</p>
+<div class="post">
+  <div class="header">
+    <time rel="dt-published">{{ post.created }}</time> by
+    <span rel="author">{{ post.user_name }}</span>
+    <span class="right">
+      <a id="{{ post.hexdigest }}" href="#{{ post.hexdigest }}">Link</a> |
+      <a replay={{ post.hexdigest }}>Reply</a>
+    </span>
+  </div>
+  <div class="body">
+    {{ post.body|md2rst|rst2html }}
+  </div>
+  <p class="signature">{{ (post.user_signature or "")|md2rst|rst2html }}</p>
+</div>
 {% endfor %}
 
 {% include("_pager.html") %}
 
-<h3>New Post</h3>
+<h3 id="new-post">New Post <small class="right">Re: {{ topic.title }}</small></h3>
 
 {% if user %}
 <form method="post" action="/s/{{ section.title }}/{{ topic.title }}">
-  <label>
-    Post:<br/>
-    <textarea name="body" placeholder="Your post message" cols="80"></textarea><br/>
-  </label>
+  <label for="post-editor">Post:</label>
+  <div class="right in-replay">
+    <label>In Replay:</label>
+    <input class="" id="parent_hexdigest" name="parent" readonly>
+  </div>
+  <textarea name="body" id="post-editor"
+    placeholder="Your post message" cols="80" rows="10"></textarea>
+  <br/>
   <input value="Create" type="submit">
+  <input value="Clear" type="reset">
 </form>
+
+<script>
+  $(document).ready(function() {
+    let post_editor = new DocutilsEditor('#post-editor');
+    $('a[replay]').on('click', function(ev){
+      let hexdigest = $(ev.target).attr('replay')
+      $.ajax({url: '/p/'+hexdigest,
+              type: 'get',
+              success: function(data){
+                post_editor.$source.val('>'+data.post.body.replaceAll('\n', '\n>'));
+                $('#parent_hexdigest').val(hexdigest);
+                document.querySelector('#new-post').scrollIntoView();
+              },
+              error: function(xhr, status, http_status) {
+                console.error(http_status);
+                alert("Request error");
+              }
+      })
+
+    });
+  });
+</script>
+
 {% else %}
 <p>You have to be log in...</p>
 {% endif %}

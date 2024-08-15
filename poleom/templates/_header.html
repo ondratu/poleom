@@ -13,17 +13,21 @@
     <meta content="summary" name="twitter:card" property="twitter:card">
     <meta content="@mcbig_cz" name="twitter:creator" property="twitter:creator">
     <meta content="Forum" name="keywords">
-    <link href="/poleom.css" rel="stylesheet">
+    <link href="/css/poleom.css" rel="stylesheet">
+    <link href="/css/tiny-writer.css" rel="stylesheet">
+    {#<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>#}
+    <script src="/js/jquery-3.7.1.min.js"></script>
+    <script src="/js/docutils-editor.js"></script>
     <title>Poleom</title>
   </head>
   <body>
     <nav>
       <div class="page-width">
-        <div class="title">Poleom</div>
+        <h1 class="title">Poleom</h1>
       {% if user %}
         {{ user.name }}  <a href="/logout">Logout</a>
       {% else %}
-        <form method="post" action="/login">
+        <form method="post" action="/login" class="login">
           <input name="email" type="email" placeholder="jon.doe@example.com"/>
           <input name="password" type="password"/>
           <input value="Login" type="submit"/>

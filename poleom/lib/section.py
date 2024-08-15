@@ -1,11 +1,13 @@
 """Section record model"""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
+
+# pylint: disable=duplicate-code
 
 
 @dataclass
@@ -16,6 +18,7 @@ class Section:
     _id: int
     title: str
     description: str
+    count: int = field(init=False, default=0)
 
     @property
     def id(self):
@@ -99,13 +102,19 @@ class Section:
     def list(conn: Connection):
         """Get list of sections from db."""
         with conn.cursor(DictCursor) as cur:
-            cur.execute("SELECT * FROM sections")
+            cur.execute("""
+                SELECT *, count(T.section_id) AS count FROM sections AS S
+                    LEFT JOIN topics AS T ON (T.section_id = S.section_id)
+                GROUP BY S.section_id
+            """)
             for row in cur:
-                yield Section(row["section_id"], row["title"],
-                              row["description"])
+                section = Section(row["section_id"], row["title"],
+                                  row["description"])
+                section.count = row["count"]
+                yield section
 
     @staticmethod
-    def count(conn: Connection):
+    def total(conn: Connection):
         """Return total count of sections in db."""
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM sections")

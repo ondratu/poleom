@@ -26,7 +26,9 @@ dependencies = [
   "gevent",
   "bcrypt",
   "jinja2_template_info",
-  "gevent_mysqldb @ git+https://github.com/axiros/gevent_mysqldb.git"
+  "gevent_mysqldb @ git+https://github.com/axiros/gevent_mysqldb.git",
+  "docutils",
+  "docutils-tinyhtmlwriter",
 ]
 
 [tool.setuptools]

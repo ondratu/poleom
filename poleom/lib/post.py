@@ -15,9 +15,10 @@ class Post:
     # pylint: disable=too-many-instance-attributes
     _id: int
     topic_id: int
-    parent_id: int | None
+    parent: str | None  # parent post hexdigest
     created: datetime | None
     user_id: int
+    hexdigest: str
     body: str
     user_name: str | None = field(init=False)
     user_signature: str | None = field(init=False)
@@ -27,11 +28,6 @@ class Post:
         """Post.id is read only."""
         return self._id
 
-    @property
-    def hexdigest(self):
-        """Return simple md5 hexdigest."""
-        return sha256(str(self._id).encode("utf-8")).hexdigest()[:10]
-
     def dict(self):
         """Return dictionary from instance.
 
@@ -40,33 +36,38 @@ class Post:
         return {
             "id": self._id,
             "topic_id": self.topic_id,
-            "parent_id": self.parent_id,
+            "parent": self.parent,
             "created": self.created,
             "user_id": self.user_id,
+            "hexdigest": self.hexdigest,
             "body": self.body,
         }
 
     @staticmethod
     def from_row(row):
         """Return Post from row."""
-        return Post(row["post_id"], row["topic_id"], row["parent_id"],
-                    row["created"], row["user_id"], row["body"])
+        return Post(row["post_id"], row["topic_id"], row["parent"],
+                    row["created"], row["user_id"], row["hexdigest"],
+                    row["body"])
 
     @staticmethod
     def create(conn: Connection,
                topic_id: int,
                user_id: int,
                body: str,
-               parent_id: int | None = None):
+               parent: str | None = None):
         """Create new post in db."""
         created = datetime.now()
-        post = Post(0, topic_id, parent_id, created, user_id, body)
+        hexdigest = sha256(
+            f"{created.timestamp()}.{user_id}".encode()).hexdigest()[:10]
+        post = Post(0, topic_id, parent, created, user_id, hexdigest, body)
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO posts (topic_id, parent_id, created, user_id, body)
-                VALUES (%(topic_id)s, %(parent_id)s, %(created)s, %(user_id)s,
-                        %(body)s)
+                INSERT INTO posts (topic_id, parent, created, user_id,
+                        hexdigest, body)
+                VALUES (%(topic_id)s, %(parent)s, %(created)s, %(user_id)s,
+                        %(hexdigest)s, %(body)s)
             """, post.dict())
             post._id = cur.lastrowid  # pylint: disable=protected-access
             conn.commit()
@@ -78,6 +79,17 @@ class Post:
         with conn.cursor(DictCursor) as cur:
             cur.execute("SELECT * FROM posts WHERE post_id=%(id)s",
                         {"id": _id})
+            row = cur.fetchone()
+            if not row:
+                return None
+            return Post.from_row(row)
+
+    @staticmethod
+    def find(conn: Connection, hexdigest: str):
+        """Find post record by hexdigest in db."""
+        with conn.cursor(DictCursor) as cur:
+            cur.execute("SELECT * FROM posts WHERE hexdigest=%(hexdigest)s",
+                        {"hexdigest": hexdigest})
             row = cur.fetchone()
             if not row:
                 return None
@@ -106,7 +118,8 @@ class Post:
     def list(conn: Connection, pager: Pager, topic_id: int):
         """Get list of sections from db."""
         with conn.cursor(DictCursor) as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT *, U.name, U.signature FROM posts AS P
                     LEFT JOIN users AS U ON (U.user_id = P.user_id)
                 WHERE topic_id=%(topic_id)s ORDER BY post_id

@@ -1,26 +1,43 @@
 {# vim:set softtabstop=2: -#}
 <h2>Topics:</h2>
-<h3>New Topic</h3>
-
+<h3>New Topic <span class="right updown-button">&udarr;</span></h3>
+<div>
 {% if user %}
 <form method="post" action="/s/{{ section.title }}">
   <label>
-    Title:<br/>
-    <input name="title" placeholder="Topic Title" maxlength="255" size="80"/><br/>
+    Title:
+    <input name="title" placeholder="Topic Title" maxlength="255" size="80"/>
   </label>
-  <label>
-    Post:<br/>
-    <textarea name="body" placeholder="First Topic Post" cols="80"></textarea><br/>
-  </label>
+  <br/>
+  <label for="topic-editor">Description:</label><br>
+  <textarea name="body" id="topic-editor"
+    placeholder="First Topic Post" cols="80" rows="10"></textarea>
+  <br/>
   <input value="Create" type="submit">
 </form>
+
+<script>
+  $(document).ready(function() {
+    let topic_editor = new DocutilsEditor('#topic-editor');
+  });
+</script>
+
 {% else %}
 <p>You have to be log in...</p>
 {% endif %}
+</div>
 
 {% for topic in topics %}
-<a href="/s/{{ section.title }}/{{ topic.title }}"><h4>{{ topic.title }}</h4></a>
-{{ topic.count }}
+<a href="/s/{{ section.title }}/{{ topic.title }}">
+  <h3 class="topic">
+    {{topic.title }}
+    <div class="right">
+    <span>Posts: {{ topic.count }}</span>
+    <span rel="dh-updated">Last: <b>{{ topic.last }}</b></span>
+    <span rel="author">by {{ topic.user_name }}</span>
+    </div>
+  </h3></a>
+
 {% endfor %}
 
 {% if total == 0 %}

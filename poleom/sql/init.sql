@@ -33,23 +33,27 @@ CREATE TABLE topics (
 CREATE TABLE posts (
     post_id INT NOT NULL AUTO_INCREMENT,
     topic_id INT NOT NULL,
-    parent_id INT DEFAULT NULL,
+    parent VARCHAR(10) DEFAULT NULL,
     created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
+    hexdigest VARCHAR(10) NOT NULL,
     body TINYTEXT NOT NULL,
 
     PRIMARY KEY (post_id),
     INDEX topic_id_ik (topic_id),
     FOREIGN KEY topic_id_fk (topic_id)
         REFERENCES topics(topic_id) ON DELETE CASCADE,
-    INDEX parent_id_ik (parent_id),
-    FOREIGN KEY parent_id_fk (parent_id)
-        REFERENCES posts(post_id) ON DELETE CASCADE,
+    INDEX parent_ik (parent),
+    FOREIGN KEY parent_fk (parent)
+        REFERENCES posts(hexdigest) ON DELETE CASCADE,
     INDEX user_id_ik (user_id),
     FOREIGN KEY user_id_fk (user_id)
-        REFERENCES users(user_id) ON DELETE CASCADE
+        REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX hexdigest_ik (hexdigest)
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+
+substring(sha2(post_id, '256'), 1, 10)
 
 
 INSERT INTO users (name, email, password)

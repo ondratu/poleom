@@ -1,7 +1,20 @@
 {# vim:set softtabstop=2: -#}
     </div>{# /page #}
+    <script>
+        $(document).ready(function() {
+            $('.updown-button').parent().on('click', function(ev) {
+                console.log($(ev.target).parent());
+                $(ev.target).next().slideToggle();
+            });
+        });
+    </script>
+
     <div class="footer page-width">
-      <center><small></i>Create by Ondřej Tůma 2024.</i></small></center>
+      <center><small>
+          Create by Ondřej Tůma 2024.
+          Found bug, please <a href="https://github.com/ondratu/poleom/issues">
+            report</a> it.
+      </small></center>
       {%- if template_info is defined %}
       {%- from 'template_info.html' import render_info %}
       <pre class="template-info">
