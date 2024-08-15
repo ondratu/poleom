@@ -1,0 +1,27 @@
+{# vim:set softtabstop=2: -#}
+{% set notheader = True -%}
+{% include("_header.html") %}
+
+    <h2>Log in</h2>
+
+    <form class="form login" method="post" action="/login">
+      <input name="redirect_url" type="hidden" value="{{ redirect_url }}">
+      {% if error is defined %}
+      <div>Login failed!</div>
+      {% endif %}
+      <label>
+        <span>Email:</span>
+        <input name="email" type="email" placeholder="jon.doe@example.com"
+          size="30"/>
+      </label>
+      <label>
+        <span>Password:</span>
+        <input name="password" type="password" size="30"/>
+      </label>
+      <div class="buttons">
+        <input value="Log in" type="submit"/>
+        <a class="right" href="/signup">Sign up</a>
+      </div>
+    </form>
+
+  {% include("_footer.html") %}

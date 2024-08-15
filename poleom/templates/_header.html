@@ -18,20 +18,17 @@
     {#<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>#}
     <script src="/js/jquery-3.7.1.min.js"></script>
     <script src="/js/docutils-editor.js"></script>
-    <title>Poleom</title>
+    <title>{{ title or "Poleom" }}</title>
   </head>
   <body>
     <nav>
       <div class="page-width">
-        <h1 class="title">Poleom</h1>
+        <h1 class="title"><a href="/">Poleom</a></h1>
       {% if user %}
-        {{ user.name }}  <a href="/logout">Logout</a>
-      {% else %}
-        <form method="post" action="/login" class="login">
-          <input name="email" type="email" placeholder="jon.doe@example.com"/>
-          <input name="password" type="password"/>
-          <input value="Login" type="submit"/>
-        </form>
+        {{ user.name }}  <a href="/logout">Log out</a>
+      {% elif notheader is not defined %}
+        <a href="/login" class="button">Log in</a>
+        <a href="/signup" class="button">Sign up</a>
       {% endif %}
       </div>
     </nav>

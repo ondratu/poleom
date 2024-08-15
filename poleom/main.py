@@ -45,17 +45,35 @@ def root(req):
                          pager=pager)
 
 
+@app.route("/login")
+@check_login_cookie
+def login_page(req):
+    """Return log in page."""
+    if req.user:
+        redirect(req.referer)
+    return generate_page("login.html", redirect_url=req.referer)
+
+
 @app.route("/login", method=state.METHOD_POST)
 def login(req):
     """Create login cookie."""
     email = req.form.get("email")
     password = req.form.get("password")
+    redirect_url = req.form.get("redirect_url")
+
     user = User.find(req.db, email, password)
     if not user:
         uri = parse.urlparse(req.referer)
-        redirect(uri._replace(fragment="bad_login").geturl())
+        return generate_page("login.html",
+                             email=email,
+                             redirect_url=req.referer,
+                             error=True)
+
     session = create_login_cookie(user.id)
-    res = RedirectResponse(req.referer)
+    uri = parse.urlparse(redirect_url)
+    redirect_url = uri._replace(scheme="",
+                                netloc="").geturl()
+    res = RedirectResponse(redirect_url)
     session.header(res)
     return res
 
