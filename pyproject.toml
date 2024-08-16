@@ -29,6 +29,7 @@ dependencies = [
   "gevent_mysqldb @ git+https://github.com/axiros/gevent_mysqldb.git",
   "docutils",
   "docutils-tinyhtmlwriter",
+  "m2r",
 ]
 
 [tool.setuptools]

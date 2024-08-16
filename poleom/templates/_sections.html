@@ -33,7 +33,7 @@
     {{ section.title }}
     <small class="right">Topics: {{ section.count }}</small>
   </h3></a>
-<p>{{ section.description }}</p>
+  <p>{{ section.description|md2rst|rst2html }}</p>
 {% endfor %}
 
 {% if total < 2 %}

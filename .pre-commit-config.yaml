@@ -1,17 +1,17 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.3.2'
+    rev: 'v0.6.1'
     hooks:
     - id: ruff
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
+    rev: 7.1.1
     hooks:
       - id: flake8
   - repo: https://github.com/Lucas-C/pre-commit-hooks-markup
@@ -32,6 +32,6 @@ repos:
         # accept virtualenv (pre-commit installed in venv)
         language: system
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.9.0'
+    rev: 'v1.11.1'
     hooks:
       - id: mypy

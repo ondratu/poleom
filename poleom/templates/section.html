@@ -7,8 +7,8 @@
   <li class="active">{{ section.title }}</li>
 </ul>
 
-<h1>{{ section.title }}</h1>
-<p>{{ section.description }}</p>
+<h2 class="section">{{ section.title }}</h2>
+<div>{{ (section.description or "")|md2rst|rst2html }}</div>
 
 {% include("_topics.html") %}
 

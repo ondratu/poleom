@@ -74,6 +74,7 @@ def jinja_rst2html(src):
     return rst2html(src)[0]
 
 
+environment.globals["title"] = app.title
 environment.filters["md2rst"] = md2rst
 environment.filters["rst2html"] = jinja_rst2html
 

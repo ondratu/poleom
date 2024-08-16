@@ -18,17 +18,26 @@
     {#<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>#}
     <script src="/js/jquery-3.7.1.min.js"></script>
     <script src="/js/docutils-editor.js"></script>
-    <title>{{ title or "Poleom" }}</title>
+    <script src="/js/message.js"></script>
+    <title>{{ title }}</title>
   </head>
   <body>
     <nav>
       <div class="page-width">
-        <h1 class="title"><a href="/">Poleom</a></h1>
+        <h1 class="title"><a href="/">{{ title }}</a></h1>
       {% if user %}
-        {{ user.name }}  <a href="/logout">Log out</a>
+        <div class="dropdown">
+          <a>{{ user.name }}</a>
+          <div class="menu" data="account">
+            <a href="/user/account">Account</a>
+            <a href="/logout">Log out</a>
+          </div>
+        </div>
       {% elif notheader is not defined %}
         <a href="/login" class="button">Log in</a>
         <a href="/signup" class="button">Sign up</a>
+      {% else %}
+        <div>&nbsp;</div>
       {% endif %}
       </div>
     </nav>

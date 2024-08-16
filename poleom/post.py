@@ -7,7 +7,7 @@ from poorwsgi.response import JSONResponse, abort, redirect
 from .lib.auth import auth_user
 from .lib.core import app
 from .lib.post import Post
-from .topics import find_topic
+from .topic import find_topic
 
 
 @app.route("/s/<section_title>/<topic_title>", method=state.METHOD_POST)
@@ -27,7 +27,7 @@ def create_post(req, section_title: str, topic_title: str):
     redirect(uri._replace(fragment=post.hexdigest).geturl())
 
 
-@app.route("/p/<hexdigest>")
+@app.route("/p/<hexdigest:hex>")
 @auth_user
 def get_post(req, hexdigest: str):
     """Return post data identify by hexdigest."""

@@ -1,21 +1,16 @@
 """Core page output."""
-from urllib import parse
-
 from MySQLdb import ProgrammingError  # type: ignore[import-untyped]
 from poorwsgi import redirect, state
-from poorwsgi.response import JSONResponse, RedirectResponse
+from poorwsgi.response import JSONResponse
 
 from .lib.auth import (
     auth_user,
     check_login_cookie,
-    create_login_cookie,
-    destroy_login_cookie,
 )
 from .lib.core import app
 from .lib.pager import Pager
 from .lib.section import Section
 from .lib.topic import Topic
-from .lib.user import User
 from .lib.view import generate_page, md2rst, parse_system_messages, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
@@ -45,46 +40,10 @@ def root(req):
                          pager=pager)
 
 
-@app.route("/login")
-@check_login_cookie
-def login_page(req):
-    """Return log in page."""
-    if req.user:
-        redirect(req.referer)
-    return generate_page("login.html", redirect_url=req.referer)
-
-
-@app.route("/login", method=state.METHOD_POST)
-def login(req):
-    """Create login cookie."""
-    email = req.form.get("email")
-    password = req.form.get("password")
-    redirect_url = req.form.get("redirect_url")
-
-    user = User.find(req.db, email, password)
-    if not user:
-        uri = parse.urlparse(req.referer)
-        return generate_page("login.html",
-                             email=email,
-                             redirect_url=req.referer,
-                             error=True)
-
-    session = create_login_cookie(user.id)
-    uri = parse.urlparse(redirect_url)
-    redirect_url = uri._replace(scheme="",
-                                netloc="").geturl()
-    res = RedirectResponse(redirect_url)
-    session.header(res)
-    return res
-
-
-@app.route("/logout")
-def logout(req):
-    """Create login cookie."""
-    session = destroy_login_cookie(req.cookies)
-    res = RedirectResponse(req.referer)
-    session.header(res)
-    return res
+@app.route("/terms")
+def terms(_):
+    """Return Terms."""
+    return generate_page("terms.html")
 
 
 @app.route("/preview", method=state.METHOD_POST)

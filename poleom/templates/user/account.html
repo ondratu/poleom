@@ -1,0 +1,70 @@
+{# vim:set softtabstop=2: -#}
+{% set notheader = True -%}
+{% include("_header.html") %}
+
+    <h2>User Account</h2>
+
+    <form class="form signup" method="post" action="/user/account">
+      <label class="{{ "error" if "name" in errors }}">
+        <span>Name:</span>
+        <input name="name" value="{{ user.name or "" }}" maxlength="255"
+               placeholder="John Doe"/>
+      </label>
+      {% if "name" in errors %}
+      <div class="error">{{ errors.name.value }}</div>
+      {% endif -%}
+
+      <label class="{{ "error" if "email" in errors }}">
+        <span>Email:</span>
+        <input name="email" type="email" value="{{ user.email or "" }}"
+               maxlength="200" placeholder="john.doe@example.com"
+          size="35"/>
+      </label>
+      {% if "email" in errors %}
+      <div class="error">{{ errors.email.value }}</div>
+      {% endif -%}
+
+      <label for="signature-editor">
+        <span>Signature:</span></label>
+        <textarea name="signature" placeholder="Active Poleom user"
+                  id="signature-editor"
+                  rows="5">{{ user.signature or ""}}</textarea>
+
+      <div class="hr"/></div>
+      <div class="info">Password will change after valid fill next fields.</div>
+
+      <label class="{{ "error" if "password" in errors }}">
+        <span>Password:</span>
+        <input name="password" type="password"/>
+      </label>
+      {% if "password" in errors %}
+      <div class="error">{{ errors.password.value }}</div>
+      {% endif -%}
+      <div class="info">At least 10 chars with uppercase letter,
+        lowercase and number or more then 15 chars.</div>
+
+      <label class="{{ "error" if "password_again" in errors }}">
+        <span>Password again:</span>
+        <input name="password_again" type="password"/>
+      </label>
+      {% if "password_again" in errors %}
+      <div class="error">{{ errors.password_again.value }}</div>
+      {% endif -%}
+
+      <div class="buttons">
+        <input value="Save" type="submit"/>
+      </div>
+    </form>
+
+  <script>
+    $(document).ready(function() {
+      let signature_editor = new DocutilsEditor('#signature-editor');
+
+    if (document.location.hash == '#save-done'){
+          (new Message('Account settings is saved'))
+                  .insertBefore('.footer');
+      };
+
+    });
+  </script>
+  {% include("_footer.html") %}

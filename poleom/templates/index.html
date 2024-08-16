@@ -5,4 +5,17 @@
 
   {% include("_topics.html") %}
 
+  <script>
+    $(document).ready(function() {
+      if (document.location.hash == '#registration-done'){
+          (new Message('You are on board. Welcome.'))
+                  .insertBefore('.footer');
+      };
+      if (document.location.hash == '#reset-password-done'){
+          (new Message('Your password was reset sucessfull.'))
+                  .insertBefore('.footer');
+      };
+    });
+  </script>
+
   {% include("_footer.html") %}

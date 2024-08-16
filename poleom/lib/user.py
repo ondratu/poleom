@@ -1,28 +1,51 @@
 """User record model."""
+import re
 from dataclasses import dataclass
+from enum import Enum
 from hashlib import sha3_512
 
 import bcrypt
+from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
+
+from .exceptions import MYSQL_DUPLICITY, DuplicityError
+
+# Three options of the password format
+# >= 10 chars, one lowercase letter, one uppercase letter, one number
+CHECK_OPT1 = r"((?=.*[a-z])(?=.*[A-Z])(?=.*\d))[\w]{10,}$"
+# >= 10 chars, one non-alphanumeric character
+CHECK_OPT2 = r"((?=.*\W)(?=.*[\w])[\w\W]{10,})$"
+# >= 15 chars
+CHECK_OPT3 = r"[\w\W]{15,}$"
 
 
 @dataclass
 class User:
     """Section record model class."""
     HASH_ROUNDS = 12
+    VALID_PASSWORD_REGEX = re.compile(
+        f"^({CHECK_OPT1}|{CHECK_OPT2}|{CHECK_OPT3})")
+
+    class State(Enum):
+        """User state enum."""
+        ACTIVE = "ACTIVE"
+        REGISTERED = "REGISTERED"
+        BANED = "BANED"
+        DELETED = "DELETED"
 
     _id: int
     name: str
     email: str
     signature: str | None
+    state: State
 
     @property
     def id(self):
         """Section.id is read only."""
         return self._id
 
-    def dict(self):
+    def to_dict(self):
         """Return dictionary from instance.
 
         It uses only databases row values.
@@ -32,13 +55,14 @@ class User:
             "name": self.name,
             "email": self.email,
             "signature": self.signature,
+            "state": self.state,
         }
 
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
         return User(row["user_id"], row["name"], row["email"],
-                    row["signature"])
+                    row["signature"], User.State(row["state"]))
 
     @staticmethod
     def create(conn: Connection,
@@ -50,18 +74,26 @@ class User:
         hashed = bcrypt.hashpw(
             sha3_512(password.encode("utf-8")).digest(),
             bcrypt.gensalt(User.HASH_ROUNDS))
-        user = User(0, name, email, signature)
+        user = User(0, name, email, signature, User.State.REGISTERED)
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO users
-                    (name, email, password, signature)
-                VALUES
-                    (%(name)s, %(email)s, %(password)s, %(signature)s)
-            """, dict(user.dict(), password=hashed.decode("utf-8")))
-            user._id = cur.lastrowid  # pylint: disable=protected-access
-            return user
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO users
+                        (name, email, password, signature, state)
+                    VALUES
+                        (%(name)s, %(email)s, %(password)s, %(signature)s,
+                         %(state)s)
+                """, dict(user.to_dict(), state=user.state.value,
+                          password=hashed.decode("utf-8")))
+                user._id = cur.lastrowid  # pylint: disable=protected-access
+                conn.commit()
+                return user
+        except IntegrityError as err:
+            if err.args[0] == MYSQL_DUPLICITY:
+                raise DuplicityError from err
+            raise
 
     @staticmethod
     def get(conn: Connection, _id: int):
@@ -77,7 +109,7 @@ class User:
             return User.from_row(row)
 
     @staticmethod
-    def find(conn: Connection, email: str, password: str):
+    def find(conn: Connection, email: str, password: str | None = None):
         """Found user by email and check his password."""
         with conn.cursor(DictCursor) as cur:
             cur.execute(
@@ -87,8 +119,9 @@ class User:
             row = cur.fetchone()
             if not row:
                 return None
-            if not bcrypt.checkpw(sha3_512(password.encode("utf-8")).digest(),
-                                  row["password"].encode("utf-8")):
+            if password and not bcrypt.checkpw(
+                    sha3_512(password.encode("utf-8")).digest(),
+                    row["password"].encode("utf-8")):
                 return None
             return User.from_row(row)
 
@@ -97,11 +130,13 @@ class User:
         """Delete existing user in db."""
         with conn.cursor() as cur:
             cur.execute("DELETE FROM users WHERE user_id=%(id)s", {"id": _id})
+            conn.commit()
 
     def update(self, conn: Connection, password: str | None = None):
         """Update existing user in db."""
-        cols = ["name", "email", "signature"]
-        vals = self.dict()
+        cols = ["name", "email", "signature", "state"]
+        vals = self.to_dict()
+        vals["state"] = self.state.value
         if password:
             cols.append("password")
             hashed = bcrypt.hashpw(
@@ -118,6 +153,7 @@ class User:
                 UPDATE users SET {sql}
                 WHERE user_id = %(id)s
             """, vals)
+            conn.commit()
 
     @staticmethod
     def list(conn: Connection):

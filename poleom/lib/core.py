@@ -6,6 +6,8 @@ from os.path import join
 from MySQLdb import connect  # type: ignore[import-untyped]
 from poorwsgi import Application
 
+from .smtp import Smtp
+
 
 class App(Application):
     """Own Application class"""
@@ -16,6 +18,8 @@ class App(Application):
         options = self.get_options()
         if options.get("debug", "False") == "True":
             self.debug = True
+
+        self.title = options.get("title", "Poleom")
 
         # Data Source Name regular expression for mysql connection
         re_dsn = re.compile(
@@ -44,6 +48,12 @@ class App(Application):
         if not self.secret_key:
             error = "Not secret_key set!"
             raise RuntimeWarning(error)
+
+        self.smtp = Smtp(options.get("smtp", ""))
+        self.smtp.timeout = 10
+
+        self.change_request_ttl = int(
+            options.get("change_request_ttl", "86400"))
 
 
 app = App()

@@ -14,7 +14,7 @@
   <div class="body">
     {{ post.body|md2rst|rst2html }}
   </div>
-  <p class="signature">{{ (post.user_signature or "")|md2rst|rst2html }}</p>
+  <div class="signature">{{ (post.user_signature or "")|md2rst|rst2html }}</div>
 </div>
 {% endfor %}
 
