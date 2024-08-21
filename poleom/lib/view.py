@@ -10,7 +10,7 @@ from docutils.core import publish_parts  # type: ignore[import]
 from docutils_tinyhtml import Writer
 from jinja2 import Environment, FileSystemLoader
 from jinja2_template_info import TemplateInfoExtension
-from m2r import convert  # type: ignore[import]
+from m2r2 import convert  # type: ignore[import]
 from markupsafe import Markup
 
 from .core import app
