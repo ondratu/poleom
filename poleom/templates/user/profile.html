@@ -1,0 +1,19 @@
+{# vim:set softtabstop=2: -#}
+{% include("_header.html") %}
+
+    <h2>User Profile</h2>
+
+    <div class="profile">
+      {# TODO: gravater image #}
+      <div>Name: {{ user.name }}</div>
+      {% if me and me.email == user.email %}
+      <div>Email: {{ user.email }}</div>
+      {% endif %}
+      <div>Role: {{ user.role.value }}</div>
+      <div>State: {{ user.state.value }}</div>
+      <div>Signature:</div>
+      <div>{{ (user.signature or "")|md2rst|rst2html }}</div>
+
+    </div>
+
+  {% include("_footer.html") %}

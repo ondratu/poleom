@@ -31,14 +31,21 @@ class User:
         """User state enum."""
         ACTIVE = "ACTIVE"
         REGISTERED = "REGISTERED"
-        BANED = "BANED"
+        BANNED = "BANNED"
         DELETED = "DELETED"
+
+    class Role(Enum):
+        """User role enum."""
+        USER = "USER"
+        MODERATOR = "MODERATOR"
+        ADMIN = "ADMIN"
 
     _id: int
     name: str
     email: str
     signature: str | None
     state: State
+    role: Role
 
     @property
     def id(self):
@@ -56,13 +63,15 @@ class User:
             "email": self.email,
             "signature": self.signature,
             "state": self.state,
+            "role": self.role,
         }
 
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
         return User(row["user_id"], row["name"], row["email"],
-                    row["signature"], User.State(row["state"]))
+                    row["signature"], User.State(row["state"]),
+                    User.Role(row["role"]))
 
     @staticmethod
     def create(conn: Connection,
@@ -74,18 +83,20 @@ class User:
         hashed = bcrypt.hashpw(
             sha3_512(password.encode("utf-8")).digest(),
             bcrypt.gensalt(User.HASH_ROUNDS))
-        user = User(0, name, email, signature, User.State.REGISTERED)
+        user = User(0, name, email, signature, User.State.REGISTERED,
+                    User.Role.USER)
 
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     INSERT INTO users
-                        (name, email, password, signature, state)
+                        (name, email, password, signature, state, role)
                     VALUES
                         (%(name)s, %(email)s, %(password)s, %(signature)s,
-                         %(state)s)
+                         %(state)s, %(role)s)
                 """, dict(user.to_dict(), state=user.state.value,
+                          role=user.role.value,
                           password=hashed.decode("utf-8")))
                 user._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
@@ -119,10 +130,13 @@ class User:
             row = cur.fetchone()
             if not row:
                 return None
-            if password and not bcrypt.checkpw(
-                    sha3_512(password.encode("utf-8")).digest(),
-                    row["password"].encode("utf-8")):
-                return None
+            try:
+                if password and not bcrypt.checkpw(
+                        sha3_512(password.encode("utf-8")).digest(),
+                        row["password"].encode("utf-8")):
+                    return None
+            except ValueError:
+                return None  # Invalid salt means no or corupted password in DB
             return User.from_row(row)
 
     @staticmethod
@@ -134,9 +148,10 @@ class User:
 
     def update(self, conn: Connection, password: str | None = None):
         """Update existing user in db."""
-        cols = ["name", "email", "signature", "state"]
+        cols = ["name", "email", "signature", "state", "role"]
         vals = self.to_dict()
         vals["state"] = self.state.value
+        vals["role"] = self.role.value
         if password:
             cols.append("password")
             hashed = bcrypt.hashpw(

@@ -8,9 +8,7 @@ from .lib.auth import (
     check_login_cookie,
 )
 from .lib.core import app
-from .lib.pager import Pager
 from .lib.section import Section
-from .lib.topic import Topic
 from .lib.view import generate_page, md2rst, parse_system_messages, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
@@ -20,24 +18,19 @@ TABLE_DOESNT_EXIST_ERR = 1146
 @check_login_cookie
 def root(req):
     """Root / page"""
-    pager = Pager(limit=20)
-    pager.bind(req.args)
     try:
-        section = Section.get(req.db, Section.ROOT_ID)
-        sections = Section.list(req.db)
+        sections = list(Section.list(req.db))
         total = Section.total(req.db)
 
-        topics = Topic.list(req.db, pager, section_id=Section.ROOT_ID)
+        # TODO: topics = Topic.list(req.db, pager, sections=[sections.id])
     except ProgrammingError as err:
         if err.args[0] == TABLE_DOESNT_EXIST_ERR:
             redirect("/wizard")
     return generate_page("index.html",
                          user=req.user,
-                         section=section,
                          sections=sections,
                          total=total,
-                         topics=topics,
-                         pager=pager)
+                         topics={})
 
 
 @app.route("/terms")

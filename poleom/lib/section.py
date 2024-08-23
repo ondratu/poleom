@@ -1,5 +1,6 @@
 """Section record model"""
 from dataclasses import dataclass, field
+from enum import Enum
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
@@ -13,11 +14,18 @@ from .exceptions import MYSQL_DUPLICITY, DuplicityError
 @dataclass
 class Section:
     """Section record model class."""
-    ROOT_ID = 1  # Root section
+
+    class State(Enum):
+        """Section state enum."""
+        OPEN = "OPEN"
+        LOCKED = "LOCKED"
+        ARCHIVED = "ARCHIVED"
 
     _id: int
     title: str
     description: str
+    state: State = State.OPEN
+    private: bool = False
     count: int = field(init=False, default=0)
 
     @property
@@ -25,7 +33,7 @@ class Section:
         """Section.id is read only."""
         return self._id
 
-    def dict(self):
+    def to_dict(self):
         """Return dictionary from instance.
 
         It uses only databases row values.
@@ -34,24 +42,31 @@ class Section:
             "id": self._id,
             "title": self.title,
             "description": self.description,
+            "state": self.state,
+            "private": self.private,
         }
 
     @staticmethod
-    def create(conn: Connection, title: str, description: str):
+    def from_row(row):
+        """Return section entity from DB row."""
+        return Section(row["section_id"], row["title"], row["description"],
+                       Section.State(row["state"]), row["private"])
+
+    @staticmethod
+    def create(conn: Connection, title: str, description: str,
+               state: State = State.OPEN, private: bool = False):
         """Create new section in db."""
+        section = Section(0, title, description, state, private)
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO sections (title, description)
-                    VALUES (%(title)s, %(description)s)
-                """, {
-                        "title": title,
-                        "description": description,
-                    })
-                _id = cur.lastrowid
+                    INSERT INTO sections (title, description, state, private)
+                    VALUES (%(title)s, %(description)s, %(state)s, %(private)s)
+                """, dict(section.to_dict(), state=section.state.value))
+                section._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
-                return Section(_id, title, description)
+                return section
         except IntegrityError as err:
             if err.args[0] == MYSQL_DUPLICITY:
                 raise DuplicityError from err
@@ -66,7 +81,7 @@ class Section:
             row = cur.fetchone()
             if not row:
                 return None
-            return Section(_id, row["title"], row["description"])
+            return Section.from_row(row)
 
     @staticmethod
     def find(conn: Connection, title: str):
@@ -79,7 +94,7 @@ class Section:
             row = cur.fetchone()
             if not row:
                 return None
-            return Section(row["section_id"], row["title"], row["description"])
+            return Section.from_row(row)
 
     @staticmethod
     def delete(conn: Connection, _id: int):
@@ -90,13 +105,16 @@ class Section:
 
     def update(self, conn: Connection):
         """Update existing section in db."""
+        cols = ["title", "description", "state", "private"]
+        vals = self.to_dict()
+        vals["state"] = self.state.value
+
+        sql = ",".join(f"{col}=%({col})s" for col in cols)
+
         with conn.cursor() as cur:
+            # ruff: noqa: S608
             cur.execute(
-                """
-                UPDATE sections SET
-                    title=%(title)s, description=%(description)s
-                WHERE section_id = %(id)s
-            """, self.dict())
+                f"UPDATE sections SET {sql} WHERE section_id = %(id)s", vals)
 
     @staticmethod
     def list(conn: Connection):
@@ -108,8 +126,7 @@ class Section:
                 GROUP BY S.section_id
             """)
             for row in cur:
-                section = Section(row["section_id"], row["title"],
-                                  row["description"])
+                section = Section.from_row(row)
                 section.count = row["count"]
                 yield section
 

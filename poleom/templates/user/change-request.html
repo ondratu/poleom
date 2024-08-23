@@ -2,6 +2,8 @@
 {% set notheader = True -%}
 {% include("_header.html") %}
 
+{% if change_request.state.value == "PASSWORD" %}
+
     <h2>Reset Password</h2>
 
     <form class="form signup" method="post"
@@ -29,4 +31,6 @@
       </div>
     </form>
 
-  {% include("_footer.html") %}
+{% endif %}{# // Change Request State #}
+
+{% include("_footer.html") %}

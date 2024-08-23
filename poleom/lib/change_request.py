@@ -2,11 +2,13 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
+from .core import app
 from .smtp import Smtp
 from .user import User
 from .view import generate_page
@@ -16,10 +18,20 @@ from .view import generate_page
 class ChangeRequest:
     """User change request model class."""
 
+    class State(Enum):
+        """Change Request state enum."""
+        REGISTER = "REGISTER"
+        PASSWORD = "PASSWORD"  # noqa: S105
+        INFO_CHANGED = "INFO_CHANGED"
+        INFO_BANNED = "INFO_BANNED"
+        INFO_ACTIVATEDD = "INFO_ACTIVATED"
+        INFO_DELETED = "INFO_DELETED"
+
     user_id: int
     created: datetime
     accepted: datetime | None
     hexdigest: str
+    state: State
     data: dict
 
     def to_dict(self):
@@ -31,33 +43,39 @@ class ChangeRequest:
             "user_id": self.user_id,
             "created": self.created,
             "accepted": self.accepted,
-            "data": self.data,
             "hexdigest": self.hexdigest,
+            "state": self.state,
+            "data": self.data,
         }
 
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
         return ChangeRequest(row["user_id"], row["created"], row["accepted"],
-                             row["hexdigest"], json.loads(row["data"]))
+                             row["hexdigest"],
+                             ChangeRequest.State(row["state"]),
+                             json.loads(row["data"]))
 
     @staticmethod
-    def create(conn: Connection, user_id: int, data: dict):
+    def create(conn: Connection, user_id: int, state: State, data: dict):
         """Create or update change request for user in db."""
         created = datetime.now()
         hexdigest = sha256(
             f"{created.timestamp()}.{user_id}".encode()).hexdigest()
-        change_request = ChangeRequest(user_id, created, None, hexdigest, data)
+        change_request = ChangeRequest(user_id, created, None, hexdigest,
+                                       state, data)
 
         with conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO change_request
-                    (user_id, created, data, hexdigest)
+                    (user_id, created, hexdigest, state, data)
                 VALUES
-                    (%(user_id)s, %(created)s, %(data)s, %(hexdigest)s)
+                    (%(user_id)s, %(created)s, %(hexdigest)s, %(state)s,
+                     %(data)s)
                 """,
                 dict(change_request.to_dict(),
+                     state=change_request.state.value,
                      data=json.dumps(change_request.data)))
             conn.commit()
             return change_request
@@ -87,18 +105,17 @@ class ChangeRequest:
 
     def send_email(self,
                    smtp: Smtp,
-                   service_title: str,
                    user: User,
                    url: str):
         """Send email depend of type of change request."""
-        if user.state == User.State.REGISTERED:
-            subject = f"Sign up to {service_title} confirmation"
+        if self.state == ChangeRequest.State.REGISTER:
+            subject = f"Sign up to {app.title} confirmation"
             template = "user/registered.jinja"
-        elif self.data.get("password", False) is None:
-            subject = f"Reset password request from {service_title}"
+        elif self.state == ChangeRequest.State.PASSWORD:
+            subject = f"Reset password request from {app.title}"
             template = "user/reset-password-request.jinja"
-        elif "old_email" in self.data or "password" in self.data:
-            subject = f"Credetials for {service_title} changed"
+        elif self.state == ChangeRequest.State.INFO_CHANGED:
+            subject = f"Credetials for {app.title} changed"
             template = "user/changed.jinja"
         else:
             msg = "No mail template selected"

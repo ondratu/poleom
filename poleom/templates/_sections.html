@@ -1,33 +1,33 @@
 {# vim:set softtabstop=2: -#}
 <h2>Sections:</h2>
+
+{% if user and user.role.value in ("MODERATOR", "ADMIN") %}
 <h3>New Section <span class="right updown-button">&udarr;</span></h3>
 <div>
-{% if user %}
-<form method="post" action="/s">
-  <label>
-    Title:
-    <input name="title" placeholder="Section Title" maxlength="255" size="80"/>
-  </label>
-  <br/>
-  <label for="section-editor">Description:</label><br/>
-  <textarea id="section-editor" name="description"
-    placeholder="Section Descripion" cols="80" rows=5></textarea>
-  <br/>
-  <input value="Create" type="submit">
-</form>
 
-<script>
-  $(document).ready(function() {
-    let section_editor = new DocutilsEditor('#section-editor');
-  });
-</script>
+  <form method="post" action="/s">
+    <label>
+      Title:
+      <input name="title" placeholder="Section Title" maxlength="255" size="80"/>
+    </label>
+    <br/>
+    <label for="section-editor">Description:</label><br/>
+    <textarea id="section-editor" name="description"
+      placeholder="Section Descripion" cols="80" rows=5></textarea>
+    <br/>
+    <input value="Create" type="submit">
+  </form>
 
-{% else %}
-<p>You have to be log in...</p>
-{% endif %}
+  <script>
+    $(document).ready(function() {
+      let section_editor = new DocutilsEditor('#section-editor');
+    });
+  </script>
+
 </div>
+{% endif %}
 
-{% for section in sections if section.id != 1 %}
+{% for section in sections %}
 <a href="/s/{{section.title}}">
   <h3 class="section">
     {{ section.title }}

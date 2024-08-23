@@ -12,7 +12,7 @@ from .lib.auth import (
     destroy_login_cookie,
 )
 from .lib.change_request import ChangeRequest
-from .lib.core import app
+from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.smtp import Email
 from .lib.user import User
@@ -38,7 +38,7 @@ def login(req):
     user = User.find(req.db, email, password)
     if not user:
         uri = parse.urlparse(req.referer)
-        return generate_page("login.html",
+        return generate_page("user/login.html",
                              email=email,
                              redirect_url=req.referer,
                              error=True)
@@ -100,7 +100,7 @@ def signup(req):
         errors["accept_terms"] = FormError.MISSING
 
     if errors:
-        return generate_page("signup.html",
+        return generate_page("user/signup.html",
                              name=name,
                              email=email,
                              signature=signature,
@@ -111,22 +111,37 @@ def signup(req):
         user = User.create(req.db, name, email, password, signature)
     except DuplicityError:
         errors["email"] = FormError.DUPLICITY
-        return generate_page("signup.html",
+        return generate_page("user/signup.html",
                              name=name,
                              email=email,
                              signature=signature,
                              errors=errors)
 
     change_request = ChangeRequest.create(
-        req.db, user.id, {
+        req.db, user.id, ChangeRequest.State.REGISTER, {
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
-            "state": User.State.ACTIVE.value,
         })
-    url = req.construct_url("")
-    change_request.send_email(app.smtp, app.title, user, url)
+    change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return generate_page("signup-check.html", sender=app.smtp.sender)
+    return generate_page("user/signup-check.html", sender=app.smtp.sender)
+
+
+@app.route("/user/profile")
+@check_login_cookie
+def user_profile(req: Request):
+    """Return user profile."""
+    user_id = req.args.getfirst("user_id", None, int)
+    if user_id:
+        user = User.get(req.db, user_id)
+        if user is None:
+            abort(state.HTTP_NOT_FOUND)
+    else:
+        user = req.user
+        if user is None:
+            abort(state.HTTP_FORBIDDEN)
+
+    return generate_page("user/profile.html", user=user, me=req.user)
 
 
 @app.route("/user/account")
@@ -182,22 +197,18 @@ def user_account_set(req):
             data["password"] = True
 
         change_request = ChangeRequest.create(
-            req.db, req.user.id, data)
-        url = req.construct_url("")
-        change_request.send_email(app.smtp, app.title, req.user, url)
+            req.db, req.user.id, ChangeRequest.State.INFO_CHANGED, data)
+        change_request.send_email(app.smtp, req.user, req.construct_url(""))
 
     return RedirectResponse("/user/account#save-done")
 
 
-@app.route("/user/reset-password")
-def reset_password(req):
+@app.route("/user/reset-password", method=state.METHOD_GET_POST)
+def reset_password_request(req: Request):
     """Return user account form."""
-    return generate_page("user/reset-password-get.html", user=req.user)
+    if req.method_number != state.METHOD_POST:
+        return generate_page("user/reset-password-request.html")
 
-
-@app.route("/user/reset-password", method=state.METHOD_POST)
-def reset_password_post(req):
-    """Return user account form."""
     email = req.form.get("email", "").strip()
 
     errors = {}
@@ -211,48 +222,44 @@ def reset_password_post(req):
         errors["email"] = FormError.MISMATCH
 
     if errors:
-        return generate_page("user/reset-password-get.html", errors=errors)
+        return generate_page("user/reset-password-request.html", errors=errors)
 
     change_request = ChangeRequest.create(
-        req.db, user.id, {
+        req.db, user.id, ChangeRequest.State.PASSWORD, {
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
-            "password": None,
         })
-    url = req.construct_url("")
-    change_request.send_email(app.smtp, app.title, user, url)
+    change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return generate_page("user/reset-password-get.html", sent=True)
+    return generate_page("user/reset-password-request.html", sent=True)
 
 
 @app.route("/chr/<hexdigest:hex>")
-def accept_change_request(req, hexdigest: str):
-    """Accept change request."""
+def accept_change_request(req: Request, hexdigest: str):
+    """Accept change request / change request form."""
     change_request = ChangeRequest.get(req.db, hexdigest)
     if not change_request:
-        abort(state.HTTP_NOT_FOUND)
+        abort(state.HTTP_NOT_FOUND)  # TODO: Request Not Found
     expiration = change_request.created + timedelta(
         seconds=app.change_request_ttl)
     if change_request.accepted or expiration < datetime.now():
-        abort(state.HTTP_GONE)
+        abort(state.HTTP_GONE)  # TODO: Request Is Gone
 
-    # Accept
-    user = User.get(req.db, change_request.user_id)
-    ch_state = change_request.data.get("state")
-    if user.state == User.State.REGISTERED and \
-            ch_state == User.State.ACTIVE.value:
+    # Accept registration
+    if change_request.state == ChangeRequest.State.REGISTER:
         # Confirm registration
+        user = User.get(req.db, change_request.user_id)
         user.state = User.State.ACTIVE
         user.update(req.db)
         change_request.accept(req.db)
 
         session = create_login_cookie(user.id)
-        res = RedirectResponse("/#registration-done")
+        res = RedirectResponse("/user/profile")
         session.header(res)
         return res
 
-    if change_request.data.get("password", False) is None:
-        return generate_page("user/reset-password-set.html",
+    if change_request.state == ChangeRequest.State.PASSWORD:
+        return generate_page("user/change-request.html",
                              change_request=change_request)
 
     return Response(status_code=state.HTTP_BAD_REQUEST)
@@ -269,8 +276,7 @@ def post_change_request(req, hexdigest: str):
     if change_request.accepted or expiration < datetime.now():
         abort(state.HTTP_GONE)
 
-    # TODO: change_request type!!!
-    if change_request.data.get("password", False) is None:
+    if change_request.state == ChangeRequest.State.PASSWORD:
         password = req.form.get("password", "").strip() or None
         password_again = req.form.get("password_again", "").strip() or None
 
@@ -287,7 +293,7 @@ def post_change_request(req, hexdigest: str):
         user = User.get(req.db, change_request.user_id)
         user.update(req.db, password=password)
         session = create_login_cookie(user.id)
-        res = RedirectResponse("/#reset-password-done")
+        res = RedirectResponse("/user/profile")
         session.header(res)
         return res
 

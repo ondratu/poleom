@@ -41,7 +41,7 @@ def section_detail(req, title: str):
         abort(404)
 
     pager = Pager(limit=20)
-    topics = Topic.list(req.db, pager, section_id=section.id)
+    topics = list(Topic.list(req.db, pager, section_id=section.id))
     return generate_page("section.html",
                          user=req.user,
                          section=section,

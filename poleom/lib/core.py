@@ -4,9 +4,24 @@ from importlib.resources import files
 from os.path import join
 
 from MySQLdb import connect  # type: ignore[import-untyped]
-from poorwsgi import Application
+from MySQLdb.connections import Connection  # type: ignore[import-untyped]
+from poorwsgi import Application, request
 
 from .smtp import Smtp
+
+
+class Request(request.Request):
+    """Own Request for typechecking."""
+    __db: Connection
+
+    @property
+    def db(self):
+        """MySQL Connection per request."""
+        return self.__db
+
+    @db.setter
+    def db(self, value):
+        self.__db = value
 
 
 class App(Application):
@@ -61,6 +76,6 @@ app.document_root = join(str(files("poleom")), "assets")
 
 
 @app.before_response()
-def db_connect(req):
+def db_connect(req: Request):
     """Create DB connection."""
     req.db = connect(**app.db_conf)

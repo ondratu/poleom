@@ -1,6 +1,7 @@
 """Topic record model."""
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
@@ -9,13 +10,25 @@ from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
 from .pager import Pager
 
+# pylint: disable=duplicate-code
+
 
 @dataclass
 class Topic:
     """Topic record model class."""
+    # pylint: disable=too-many-instance-attributes
+
+    class State(Enum):
+        """Topic state enum."""
+        OPEN = "OPEN"
+        LOCKED = "LOCKED"
+        ARCHIVED = "ARCHIVED"
+
     _id: int
     section_id: int
     title: str
+    state: State = State.OPEN
+    pinned: bool = False
     count: int = field(init=False, default=0)
     last: datetime | None = field(init=False)
     user_name: str | None = field(init=False)
@@ -25,7 +38,7 @@ class Topic:
         """Topic.id is read only."""
         return self._id
 
-    def dict(self):
+    def to_dict(self):
         """Return dictionary from instance.
 
         It uses only databases row values.
@@ -34,24 +47,31 @@ class Topic:
             "id": self._id,
             "section_id": self.section_id,
             "title": self.title,
+            "state": self.state,
+            "pinned": self.pinned,
         }
 
     @staticmethod
-    def create(conn: Connection, section_id: int, title: str):
+    def from_row(row):
+        """Return section entity from DB row."""
+        return Topic(row["topic_id"], row["section_id"], row["title"],
+                     Topic.State(row["state"]), row["pinned"])
+
+    @staticmethod
+    def create(conn: Connection, section_id: int, title: str,
+               state: State = State.OPEN, pinned: bool = False):
         """Create new topic in db."""
+        topic = Topic(0, section_id, title, state, pinned)
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO topics (section_id, title)
-                    VALUES (%(section_id)s, %(title)s)
-                """, {
-                        "section_id": section_id,
-                        "title": title,
-                    })
-                _id = cur.lastrowid
+                    INSERT INTO topics (section_id, title, state, pinned)
+                    VALUES (%(section_id)s, %(title)s, %(state)s, %(pinned)s)
+                """, dict(topic.to_dict(), state=topic.state.value))
+                topic._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
-                return Topic(_id, section_id, title)
+                return topic
         except IntegrityError as err:
             if err.args[0] == MYSQL_DUPLICITY:
                 raise DuplicityError from err
@@ -66,7 +86,7 @@ class Topic:
             row = cur.fetchone()
             if not row:
                 return None
-            return Topic(_id, row["section_id"], row["title"])
+            return Topic.from_row(row)
 
     @staticmethod
     def find(conn: Connection, section_id: int, title: str):
@@ -80,7 +100,7 @@ class Topic:
             row = cur.fetchone()
             if not row:
                 return None
-            return Topic(row["topic_id"], row["section_id"], row["title"])
+            return Topic.from_row(row)
 
     @staticmethod
     def delete(conn: Connection, _id: int):
@@ -91,13 +111,16 @@ class Topic:
 
     def update(self, conn: Connection):
         """Update existing topic in db."""
+        cols = ["title", "state", "pinned"]
+        vals = self.to_dict()
+        vals["state"] = self.state.value
+
+        sql = ",".join(f"{col}=%({col})s" for col in cols)
+
         with conn.cursor() as cur:
+            # ruff: noqa: S608
             cur.execute(
-                """
-                UPDATE topics SET
-                    section_id=%(section_id)s, title=%(title)s
-                WHERE topic_id = %(id)s
-            """, self.dict())
+                f"UPDATE topics SET {sql} WHERE topic_id = %(id)s", vals)
 
     @staticmethod
     def list(conn: Connection, pager: Pager, section_id: int):
@@ -114,7 +137,7 @@ class Topic:
                 LIMIT %(OFFSET)s, %(LIMIT)s
             """, dict(pager.sql_dict(), section_id=section_id))
             for row in cur:
-                topic = Topic(row["topic_id"], row["section_id"], row["title"])
+                topic = Topic.from_row(row)
                 topic.count = row["count"]
                 topic.last = row["last"]
                 topic.user_name = row["U.name"]

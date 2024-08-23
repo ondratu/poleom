@@ -26,6 +26,6 @@ if __name__ == "__main__":
     # ruff: noqa: T201,S608
     print("-- First setup")
     print(f"UPDATE users SET password='{hs}', email='your@login' WHERE "
-          "email='admin@poleom';")
+          "email='root@localhost';")
     print("-- Password reset --")
     print(f"UPDATE users SET password='{hs}' WHERE email='your@login';")
