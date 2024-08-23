@@ -8,7 +8,9 @@ from .lib.auth import (
     check_login_cookie,
 )
 from .lib.core import app
+from .lib.pager import Pager
 from .lib.section import Section
+from .lib.topic import Topic
 from .lib.view import generate_page, md2rst, parse_system_messages, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
@@ -20,17 +22,17 @@ def root(req):
     """Root / page"""
     try:
         sections = list(Section.list(req.db))
-        total = Section.total(req.db)
 
-        # TODO: topics = Topic.list(req.db, pager, sections=[sections.id])
+        pager = Pager()
+        pager.limit = 3
+        for section in sections:
+            section.topics = Topic.list(req.db, pager, section.id)
     except ProgrammingError as err:
         if err.args[0] == TABLE_DOESNT_EXIST_ERR:
             redirect("/wizard")
     return generate_page("index.html",
                          user=req.user,
-                         sections=sections,
-                         total=total,
-                         topics={})
+                         sections=sections)
 
 
 @app.route("/terms")

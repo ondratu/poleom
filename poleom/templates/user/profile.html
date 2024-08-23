@@ -4,14 +4,15 @@
     <h2>User Profile</h2>
 
     <div class="profile">
-      {# TODO: gravater image #}
-      <div>Name: {{ user.name }}</div>
+      <a href="https://gravatar.com/{{ user.email|sha256 }}">
+        <img src="https://gravatar.com/avatar/{{ user.email|sha256 }}?s=256"></a>
+      <div><span class="label">Name:</span> {{ user.name }}</div>
       {% if me and me.email == user.email %}
-      <div>Email: {{ user.email }}</div>
+      <div><span class="label">Email:</span> {{ user.email }}</div>
       {% endif %}
-      <div>Role: {{ user.role.value }}</div>
-      <div>State: {{ user.state.value }}</div>
-      <div>Signature:</div>
+      <div><span class="label">Role:</span> {{ user.role.value }}</div>
+      <div><span class="label">State:</span> {{ user.state.value }}</div>
+      <div><span class="label">Signature:</span></div>
       <div>{{ (user.signature or "")|md2rst|rst2html }}</div>
 
     </div>

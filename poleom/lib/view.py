@@ -1,4 +1,5 @@
 """Response generate module."""
+import hashlib
 import re
 from gettext import NullTranslations
 from importlib.resources import files
@@ -74,9 +75,15 @@ def jinja_rst2html(src):
     return rst2html(src)[0]
 
 
+def sha256(txt: str):
+    """Return sha256 hexdigest."""
+    return hashlib.sha256(txt.encode("utf-8")).hexdigest()
+
+
 environment.globals["title"] = app.title
 environment.filters["md2rst"] = md2rst
 environment.filters["rst2html"] = jinja_rst2html
+environment.filters["sha256"] = sha256
 
 
 def generate_page(template, **kwargs):

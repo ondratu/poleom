@@ -34,6 +34,19 @@
     <small class="right">Topics: {{ section.count }}</small>
   </h3></a>
   <p>{{ section.description|md2rst|rst2html }}</p>
+
+  {% for topic in section.topics %}
+  <a href="/s/{{ section.title }}/{{ topic.title }}">
+  <h4 class="topic">
+    {{topic.title }}
+    <div class="right">
+      <span>Posts: {{ topic.count }}</span>
+      <span rel="dh-updated">Last: <b>{{ topic.last }}</b></span>
+      <span rel="author">by {{ topic.user_name }}</span>
+    </div>
+  </h4></a>
+{% endfor %}
+
 {% endfor %}
 
 {% if total < 2 %}

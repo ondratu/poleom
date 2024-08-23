@@ -12,6 +12,7 @@ from .lib.pager import Pager
 from .lib.post import Post
 from .lib.section import Section
 from .lib.topic import Topic
+from .lib.user import User
 from .lib.view import generate_page
 
 
@@ -61,7 +62,10 @@ def topic_detail(req, section_title: str, topic_title: str):
 
     pager = Pager(limit=10)
     pager.bind(req.args)
-    posts = Post.list(req.db, pager, topic_id=topic.id)
+    posts = list(Post.list(req.db, pager, topic_id=topic.id))
+    for post in posts:
+        post.user = User.get(req.db, post.user_id)
+
     return generate_page("topic.html",
                          user=req.user,
                          section=section,

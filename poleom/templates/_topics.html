@@ -1,5 +1,4 @@
 {# vim:set softtabstop=2: -#}
-<h2>Topics:</h2>
 <h3>New Topic <span class="right updown-button">&udarr;</span></h3>
 <div>
 {% if user %}
@@ -32,12 +31,11 @@
   <h3 class="topic">
     {{topic.title }}
     <div class="right">
-    <span>Posts: {{ topic.count }}</span>
-    <span rel="dh-updated">Last: <b>{{ topic.last }}</b></span>
-    <span rel="author">by {{ topic.user_name }}</span>
+      <span>Posts: {{ topic.count }}</span>
+      <span rel="dh-updated">Last: <b>{{ topic.last }}</b></span>
+      <span rel="author">by {{ topic.user_name }}</span>
     </div>
   </h3></a>
-
 {% endfor %}
 
 {% if total == 0 %}

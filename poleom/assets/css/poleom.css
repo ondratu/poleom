@@ -59,39 +59,53 @@ h1 > a:visited {
 }
 
 h3.section {
-  background-color: #ffccff;
+  background-color: #dcdcdc;
   border-radius: 4pt;
   padding: 2pt 5pt;
 }
 
 h3.topic,
 #new-post {
-  background-color: #cceeff;
+  background-color: #dcdcdc;
   border-radius: 4pt;
   padding: 2pt 5pt;
   font-size: 14pt;
 }
+h4.topic {
+  background-color: #eee;
+  border-radius: 4pt;
+  padding: 2pt 5pt;
+  font-size: 12pt;
+  margin-left: 24pt;
+}
+
 h3.section > small,
-h3.topic > div {
+h3.topic > div,
+h4.topic > div {
   font-size: 10pt;
   line-height: 14pt;
   color: black;
   font-weight: normal;
 }
+h3 > div,
 h3 > div {
   display: grid;
 }
-h3 > div > * {
+h3 > div > *,
+h4 > div > * {
   grid-row: 1;
 }
-h3 > div > [rel=dh-updated] {
+h3 > div > [rel=dh-updated],
+h4 > div > [rel=dh-updated] {
   margin: 0 5pt;
   padding: 0 5pt;
   border-left: 1px solid gray;
   border-right: 1px solid gray;
 }
-h3 > div > [rel=author] {
+h3 > div > [rel=author],
+h4 > div > [rel=author] {
   min-width: 10em;
+  display: inline-block;
 }
 
 .pager {
@@ -142,7 +156,7 @@ h3 > div > [rel=author] {
 }
 
 .page-width {
-  width: 800pt;
+  max-width: 800pt;
   margin: auto;
 }
 
@@ -251,6 +265,29 @@ button:hover,
   width: 25em;
 }
 
+.profile {
+  max-width: 25em;
+  margin: auto;
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+.profile > div {
+    margin-top: 4pt;
+}
+.profile img {
+  display: block;
+  margin: auto;
+  border-radius: 50%;
+}
+.profile .label {
+  width: 6em;
+  display: inline-block;
+  text-align: right;
+  padding-right: 4pt;
+  font-size: 11pt;
+}
+
+
 .message {
   max-width: 100%;
   width: 400pt;
@@ -334,24 +371,50 @@ h3:has(.updown-button)+div{
   border: dotted 1px #777;
   border-radius: 5pt;
   margin-bottom: 5pt;
+  clear: both;
+  background: #eeeeee;
+}
+.post * {
+    box-sizing: border-box;
 }
 .post .header {
-  background: #ffff99;
   font-size: 12pt;
   padding: 4pt;
 }
 .post a[replay] {
     text-decoration: underline;
 }
+.post .author {
+    float: left;
+    width: 148px;
+    height: 100%;
+    text-align: center;
+    font-size: 80%;
+}
+.post .author img {
+    display: block;
+    margin: auto;
+    border-radius: 50%;
+    margin-bottom: 8pt;
+    margin-top: 4pt;
+}
+.post .author > div {
+    margin-top: 3pt;
+}
 .post .body {
-  clear: both;
+  float: left;
   padding: 2pt 8pt;
-  background: #eeeeee;
+  width: calc(100% - 150px);
 }
 .post .signature {
-  margin-top: 0;
-  padding: 2pt 8pt;
+  font-size: 90%;
+  padding: 2pt 0pt;
   border-top: 1px dotted #777;
+}
+.post .footer {
+  font-size: 80%;
+  margin-top: 0;
+  padding: 2pt 0pt;
   min-height: 1em;
 }
 

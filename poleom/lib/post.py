@@ -1,5 +1,5 @@
 """Post record model"""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
 
@@ -20,8 +20,6 @@ class Post:
     user_id: int
     hexdigest: str
     body: str
-    user_name: str | None = field(init=False)
-    user_signature: str | None = field(init=False)
 
     @property
     def id(self):
@@ -120,15 +118,13 @@ class Post:
         with conn.cursor(DictCursor) as cur:
             cur.execute(
                 """
-                SELECT *, U.name, U.signature FROM posts AS P
+                SELECT * FROM posts AS P
                     LEFT JOIN users AS U ON (U.user_id = P.user_id)
                 WHERE topic_id=%(topic_id)s ORDER BY post_id
                 LIMIT %(OFFSET)s, %(LIMIT)s
             """, dict(pager.sql_dict(), topic_id=topic_id))
             for row in cur:
                 post = Post.from_row(row)
-                post.user_name = row["U.name"]
-                post.user_signature = row["U.signature"]
                 yield post
 
             cur.execute(
