@@ -1,12 +1,13 @@
 CREATE TABLE users (
     user_id INT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(256) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     email VARCHAR(200) NOT NULL,
-    password VARCHAR(64) NOT NULL,
-    signature TINYTEXT DEFAULT NULL,
+    password CHAR(64) NOT NULL,
+    signature VARCHAR(255) DEFAULT NULL,
     terms TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     state ENUM("ACTIVE", "REGISTERED", "BANNED", "DELETED") NOT NULL,
-    role ENUM("USER", "MODERATOR", "ADMIN") NOT NULL,
+    role ENUM("MEMBER", "MODERATOR", "ADMIN") NOT NULL,
+    data JSON NOT NULL DEFAULT "{}",
 
     PRIMARY KEY (user_id),
     UNIQUE KEY users_email_uk (email)
@@ -14,9 +15,9 @@ CREATE TABLE users (
 
 CREATE TABLE change_request (
     user_id INT NOT NULL,
-    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     accepted TIMESTAMP DEFAULT NULL,
-    hexdigest VARCHAR(64) NOT NULL,
+    hexdigest CHAR(64) NOT NULL,
     state ENUM("REGISTER", "PASSWORD", "INFO_CHANGED", "INFO_BANNED",
                "INFO_ACTIVATED", "INFO_DELETED") NOT NULL,
     data JSON NOT NULL,
@@ -29,9 +30,10 @@ CREATE TABLE change_request (
 
 CREATE TABLE sections (
     section_id INT NOT NULL AUTO_INCREMENT,
-    title VARCHAR(256) NOT NULL,
-    description TINYTEXT DEFAULT NULL,
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(255) DEFAULT NULL,
     state ENUM("OPEN", "LOCKED", "ARCHIVED") NOT NULL DEFAULT "OPEN",
+    weight INT NOT NULL DEFAULT 0,
     private BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (section_id),
@@ -41,7 +43,7 @@ CREATE TABLE sections (
 CREATE TABLE topics (
     topic_id INT NOT NULL AUTO_INCREMENT,
     section_id INT NOT NULL,
-    title VARCHAR(256) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     state ENUM("OPEN", "LOCKED", "ARCHIVED") NOT NULL DEFAULT "OPEN",
     pinned BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -56,10 +58,12 @@ CREATE TABLE posts (
     post_id INT NOT NULL AUTO_INCREMENT,
     topic_id INT NOT NULL,
     parent VARCHAR(10) DEFAULT NULL,
-    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified TIMESTAMP DEFAULT NULL,
     user_id INT NOT NULL,
-    hexdigest VARCHAR(10) NOT NULL,
-    body TINYTEXT NOT NULL,
+    hexdigest CHAR(10) NOT NULL,
+    state ENUM("VISIBLE", "ARCHIVED") NOT NULL DEFAULT "VISIBLE",
+    body TEXT NOT NULL, -- 65535 chars
 
     PRIMARY KEY (post_id),
     INDEX topic_id_ik (topic_id),
@@ -71,6 +75,21 @@ CREATE TABLE posts (
     INDEX user_id_ik (user_id),
     FOREIGN KEY posts_user_id_fk (user_id)
         REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE KEY hexdigest_uk (hexdigest)
+) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
+CREATE TABLE attachments (
+    post_id INT NOT NULL,
+    uploaded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    mime_type VARCHAR(255) NOT NULL,
+    file_name VARCHAR(1024) NOT NULL,
+    hexdigest CHAR(10) NOT NULL,
+    data JSON NOT NULL DEFAULT "{}",
+
+    INDEX post_id_ik (post_id),
+    FOREIGN KEY attachements_posts_id_fk (post_id)
+        REFERENCES posts(post_id) ON DELETE CASCADE,
     UNIQUE KEY hexdigest_uk (hexdigest)
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 

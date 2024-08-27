@@ -36,7 +36,7 @@ class User:
 
     class Role(Enum):
         """User role enum."""
-        USER = "USER"
+        MEMBER = "MEMBER"
         MODERATOR = "MODERATOR"
         ADMIN = "ADMIN"
 
@@ -84,7 +84,7 @@ class User:
             sha3_512(password.encode("utf-8")).digest(),
             bcrypt.gensalt(User.HASH_ROUNDS))
         user = User(0, name, email, signature, User.State.REGISTERED,
-                    User.Role.USER)
+                    User.Role.MEMBER)
 
         try:
             with conn.cursor() as cur:
