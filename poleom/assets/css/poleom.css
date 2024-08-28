@@ -247,6 +247,40 @@ form div.error {
   padding: 0 4pt;
 }
 
+.attachments input[type=file] {
+}
+.attachments div {
+  height: 20pt;
+  font-family: monospace;
+  padding: 5pt 5pt;
+  margin-bottom: 3pt;
+  margin-left: 3px;
+}
+.attachments div:hover {
+  background: #dcdcdc;
+}
+.attachments div span
+{
+  float: right;
+}
+.attachments a[file_name]{
+  cursor: pointer;
+}
+.attachments .button {
+  margin-left: 5px;
+  width: 20pt;
+  height: 20pt;
+  padding: 5pt 8pt;
+  margin-bottom: 5pt;
+  font-family: monospace;
+  font-weight: bold;
+  color: red;
+}
+.attachments .button:after{
+  content:"\a";
+  white-space: pre;
+}
+
 .login {
   width: 30em;
   margin: auto;
@@ -411,7 +445,13 @@ h3:has(.updown-button)+div{
   padding: 2pt 0pt;
   border-top: 1px dotted #777;
 }
+.post .attachments span {
+  display: block;
+  float: left;
+  padding: 0 32px 0 0;
+}
 .post .footer {
+  clear: both;
   font-size: 80%;
   margin-top: 0;
   padding: 2pt 0pt;

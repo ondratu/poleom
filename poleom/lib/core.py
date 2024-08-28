@@ -2,7 +2,7 @@
 import logging
 import re
 from importlib.resources import files
-from os.path import join
+from os import W_OK, access, path
 
 from dateutil.tz import gettz  # type: ignore[import-untyped]
 from MySQLdb import connect  # type: ignore[import-untyped]
@@ -39,6 +39,7 @@ class Request(request.Request):
 
 class App(Application):
     """Own Application class"""
+    # pylint: disable=too-many-instance-attributes
     TIME_ZONE = gettz("Europe/Prague")
 
     def __init__(self):
@@ -89,9 +90,17 @@ class App(Application):
         self.change_request_ttl = int(
             options.get("change_request_ttl", "86400"))
 
+        self.attachments = options.get("attachments", "./attachments")
+        if not path.isdir(self.attachments):
+            msg = f"Attachments `{self.attachments}` is not directory."
+            raise RuntimeWarning(msg)
+        if not access(self.attachments, W_OK):
+            msg = f"Attachments `{self.attachments}` is not writable."
+            raise RuntimeWarning(msg)
+
 
 app = App()
-app.document_root = join(str(files("poleom")), "assets")
+app.document_root = path.join(str(files("poleom")), "assets")
 
 
 @app.before_response()

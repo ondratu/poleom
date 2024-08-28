@@ -18,6 +18,7 @@ from markupsafe import Markup
 from .core import app
 
 RE_MESSAGE = re.compile(r"[<>\w]+:(\d+): \((\w+)/(\d+)\) (.*)", re.U)
+THOUSAND = 1000.0
 
 TEMPL_PATH = (str(files("jinja2_template_info")),
               join(str(files("poleom")), "templates"))
@@ -86,11 +87,22 @@ def local(value: datetime, time_zone: tzfile):
     return value.astimezone(time_zone)
 
 
+def hbytes(val: float):
+    """Return value with unit."""
+    unit = ("B", "kB", "MB", "GB", "TB", "PB")
+    u = 0
+    while val > THOUSAND and u < len(unit):
+        u += 1
+        val = val / THOUSAND
+    return f"{val:.1f}{unit[u]}"
+
+
 environment.globals["title"] = app.title
 environment.filters["md2rst"] = md2rst
 environment.filters["rst2html"] = jinja_rst2html
 environment.filters["sha256"] = sha256
 environment.filters["local"] = local
+environment.filters["hbytes"] = hbytes
 
 
 def render_template(template, **kwargs):

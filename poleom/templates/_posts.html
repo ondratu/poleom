@@ -1,5 +1,5 @@
 {# vim:set softtabstop=2: -#}
-{%- set edit_offset = "?offset="+pager.offset|format if pager.offset > 0 else "x" %}
+{%- set edit_offset = "?offset="+pager.offset|format if pager.offset > 0 else "" %}
 {%- for post in posts %}
 <div class="post">
   <div class="header">
@@ -19,6 +19,15 @@
   <div class="body">
     {{ post.body|md2rst|rst2html }}
     <div class="signature">{{ (post.user.signature or "")|md2rst|rst2html }}</div>
+    <div class="attachments">
+    {%- for attachment in post.attachments %}
+      <span>&#x1f4ce;
+        <a href="/a/{{ attachment.hexdigest }}/{{ attachment.file_name }}" title="{{ attachment.mime_type }}">
+          {{ attachment.file_name }}</a>
+        <small>{{ attachment.data.length|hbytes}}</small>
+      </span>
+    {%- endfor %}
+    </div>
     <div class="footer">Posted: {{ post.created|local(time_zone) }}
     {%- if post.modified %}
       <span class="right">Modified: {{ post.modified|local(time_zone) }}</span>
@@ -34,8 +43,7 @@
 <h3 id="new-post">New Post <small class="right">Re: {{ topic.title }}</small></h3>
 
 {% if user %}
-<!--form method="post" action="/s/{{ section.path }}/{{ topic.path }}"-->
-<form method="post" action="#new-post">
+<form method="post" enctype="multipart/form-data" action="#new-post">
   <label class="{{ "error" if "body" in errors }}" for="post-editor">Post:</label>
   <div class="right in-replay">
     <label>In Replay:</label>
@@ -47,15 +55,20 @@
   {% if "body" in errors %}
   <div class="error">{{ errors.body.value }}</div>
   {% endif -%}
+  <div class="attachments">
+    <input type="file" name="attachments">
+  </div>
 
   <input value="Create" type="submit">
   <input value="Clear" type="reset">
 </form>
 
+<script src="/js/attachment.js"></script>
 <script>
   $(document).ready(function() {
     let post_editor = new DocutilsEditor('#post-editor');
-    // TODO scroll down to post
+    let attachment = new Attachment('input[type=file]:last-child');
+
     $('a[replay]').on('click', function(ev){
       let hexdigest = $(ev.target).attr('replay')
       $.ajax({url: '/p/'+hexdigest,
@@ -72,6 +85,7 @@
       })
 
     });
+
   });
 </script>
 

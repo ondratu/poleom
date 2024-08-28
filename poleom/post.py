@@ -2,6 +2,7 @@
 from poorwsgi import state
 from poorwsgi.response import JSONResponse, RedirectResponse, abort
 
+from .lib.attachment import Attachment, File
 from .lib.auth import auth_user
 from .lib.core import Request, app
 from .lib.exceptions import FormError
@@ -22,7 +23,7 @@ def create_post(req, section_path: str, topic_path: str):
 
     if not body:
         errors = {"body": FormError.MISSING}
-        posts, pager = topic_page(req, topic.id)
+        posts, pager, _ = topic_page(req, topic.id)
         # pylint: disable=duplicate-code
 
         return render_template("topic.html",
@@ -34,11 +35,15 @@ def create_post(req, section_path: str, topic_path: str):
                                errors=errors,
                                parent=parent,
                                body=body)
-
     pager = Pager(limit=ITEMS_ON_PAGE)
     pager.bind(req.args)
 
     post = Post.create(req.db, topic.id, req.user.id, body, parent)
+    for field in req.form["attachments"]:
+        if field.filename:
+            file = File(field.file, field.filename, field.type)
+            Attachment.create(req.db, post.id, file)
+
     pager.total = Post.count(req.db, topic.id)
     return RedirectResponse(
         f"/s/{section_path}/{topic_path}?offset={pager.last}#{post.hexdigest}")
@@ -55,11 +60,14 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
     elif req.user.id != post.user_id:
         abort(state.HTTP_FORBIDDEN)
 
+    attachments = list(Attachment.list(req.db, post.id))
+
     section, topic = find_topic(req.db, section_path, topic_path)
     return render_template("post_form.html",
                            section=section,
                            topic=topic,
-                           post=post)
+                           post=post,
+                           attachments=attachments)
 
 
 @app.route("/s/<section_path>/<topic_path>/<hexdigest>",
@@ -68,6 +76,8 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
 def update_post(req, section_path: str, topic_path: str, hexdigest: str):
     """Update post."""
     post = Post.find(req.db, hexdigest)
+    if not post:
+        abort(state.HTTP_NOT_FOUND)
     if post.user_id != req.user.id:
         abort(state.HTTP_FORBIDDEN)
 
@@ -77,19 +87,26 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
     post.body = req.form.get("body", "").strip()
     section, topic = find_topic(req.db, section_path, topic_path)
 
+    for field in req.form["attachments"]:
+        if field.filename:
+            file = File(field.file, field.filename, field.type)
+            Attachment.create(req.db, post.id, file)
+
     if not post.body:
         errors = {"body": FormError.MISSING}
 
+        attachments = list(Attachment.list(req.db, post.id))
         return render_template("post_form.html",
                                section=section,
                                topic=topic,
                                post=post,
+                               attachments=attachments,
                                offset=offset,
                                errors=errors)
 
     post.update(req.db)
     return RedirectResponse(
-            f"/s/{section_path}/{topic_path}{offset}#{hexdigest}")
+        f"/s/{section_path}/{topic_path}{offset}#{hexdigest}")
 
 
 @app.route("/p/<hexdigest:hex>")
@@ -102,4 +119,5 @@ def get_post(req: Request, hexdigest: str):
 
     post_dict = post.to_dict()
     post_dict["created"] = int(post_dict["created"].timestamp())
+    post_dict["modified"] = int(post_dict["modified"].timestamp())
     return JSONResponse(post=post_dict)

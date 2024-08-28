@@ -5,7 +5,7 @@ from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 
-from .mysql import DictCursor
+from .mysql import HEX_LEN, DictCursor
 from .pager import Pager
 
 
@@ -59,7 +59,7 @@ class Post:
         """Create new post in db."""
         created = datetime.now(UTC)
         hexdigest = sha256(
-            f"{created.timestamp()}.{user_id}".encode()).hexdigest()[:10]
+            f"{created.timestamp()}.{user_id}".encode()).hexdigest()[:HEX_LEN]
         post = Post(0, topic_id, parent, created, None, user_id, hexdigest,
                     body)
         with conn.cursor() as cur:

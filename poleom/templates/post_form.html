@@ -11,7 +11,7 @@
 
 <h3 id="new-post">Edit Post</h3>
 
-<form method="POST">
+<form method="post" enctype="multipart/form-data">
   <label class="{{ "error" if "body" in errors }}" for="post-editor">Post:</label>
   <div class="right in-replay">
     <label>In Replay:</label>
@@ -25,6 +25,21 @@
   <div class="error">{{ errors.body.value }}</div>
   {% endif -%}
 
+  <div class="attachments">
+    {%- for attachment in attachments %}
+    <div>
+      <a href="/a/{{ attachment.hexdigest }}/{{ attachment.file_name }}" title="{{ attachment.mime_type }}">
+          {{ attachment.file_name }}</a>
+      <small>{{ attachment.data.length|hbytes}}</small>
+      <span>
+        <a paste="{{ attachment.hexdigest }}" file_name="{{ attachment.file_name }}">
+          Paste link</a> |
+        <a remove="{{ attachment.hexdigest }}" file_name="{{ attachment.file_name }}">Remove</a></span>
+    </div>
+    {%- endfor %}
+    <input type="file" name="attachments">
+  </div>
+
   <input value="Update" type="submit">
   <input value="Undo" type="reset">
   <a class="right"
@@ -32,9 +47,11 @@
     Cancel</a>
 </form>
 
+<script src="/js/attachment.js"></script>
 <script>
   $(document).ready(function() {
     let post_editor = new DocutilsEditor('#post-editor');
+    let attachment = new Attachment('input[type=file]:last-child', '#post-editor');
   });
 </script>
 

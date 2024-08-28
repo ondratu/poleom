@@ -3,13 +3,15 @@ from urllib import parse
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 from poorwsgi import state
-from poorwsgi.response import abort, redirect
+from poorwsgi.response import Response, abort, redirect
 
+from .lib.attachment import Attachment
 from .lib.auth import auth_user, check_login_cookie
 from .lib.core import app
 from .lib.exceptions import DuplicityError
 from .lib.pager import Pager
 from .lib.post import Post
+from .lib.response import check_etag, create_etag
 from .lib.section import Section
 from .lib.topic import Topic
 from .lib.user import User
@@ -29,14 +31,25 @@ def find_topic(db: Connection, section_path: str, topic_path: str):
     return section, topic
 
 
-def topic_page(req, topic_id: int):
+def topic_page(req, topic_id: int, check: bool = False):
     """Get data for topic page."""
     pager = Pager(limit=ITEMS_ON_PAGE)
     pager.bind(req.args)
     posts = list(Post.list(req.db, pager, topic_id=topic_id))
+    etag = ""
+    if check:
+        last_modified = 0
+        for post in posts:
+            last = int((post.modified or post.created).timestamp())
+            last_modified = last if last > last_modified else last_modified
+
+        etag = create_etag(last_modified, req.user.id if req.user else None)
+        check_etag(req.headers, etag)
+
     for post in posts:
         post.user = User.get(req.db, post.user_id)
-    return posts, pager
+        post.attachments = list(Attachment.list(req.db, post.id))
+    return posts, pager, etag
 
 
 @app.route("/s/<section_path>", method=state.METHOD_POST)
@@ -71,11 +84,12 @@ def create_topic(req, section_path: str):
 def topic_detail(req, section_path: str, topic_path: str):
     """Return section detail."""
     section, topic = find_topic(req.db, section_path, topic_path)
-    posts, pager = topic_page(req, topic.id)
+    posts, pager, etag = topic_page(req, topic.id, check=True)
 
-    return render_template("topic.html",
-                           user=req.user,
-                           section=section,
-                           topic=topic,
-                           posts=posts,
-                           pager=pager)
+    return Response(render_template("topic.html",
+                                    user=req.user,
+                                    section=section,
+                                    topic=topic,
+                                    posts=posts,
+                                    pager=pager),
+                    headers={"ETag": etag})

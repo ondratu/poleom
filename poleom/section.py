@@ -2,12 +2,13 @@
 from urllib import parse
 
 from poorwsgi import state
-from poorwsgi.response import abort, redirect
+from poorwsgi.response import Response, abort, redirect
 
 from .lib.auth import auth_user, check_login_cookie
 from .lib.core import app
 from .lib.exceptions import DuplicityError
 from .lib.pager import Pager
+from .lib.response import check_etag, create_etag
 from .lib.section import Section
 from .lib.topic import Topic
 from .lib.view import render_template
@@ -42,8 +43,17 @@ def section_detail(req, path: str):
 
     pager = Pager(limit=20)
     topics = list(Topic.list(req.db, pager, section_id=section.id))
-    return render_template("section.html",
-                           user=req.user,
-                           section=section,
-                           topics=topics,
-                           pager=pager)
+    last_modified = 0
+    for topic in topics:
+        last = int(topic.last.timestamp())
+        last_modified = last if last > last_modified else last_modified
+
+    etag = create_etag(last_modified, req.user.id if req.user else None)
+    check_etag(req.headers, etag)
+
+    return Response(render_template("section.html",
+                                    user=req.user,
+                                    section=section,
+                                    topics=topics,
+                                    pager=pager),
+                    headers={"ETag": etag})

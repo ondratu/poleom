@@ -59,11 +59,11 @@ CREATE TABLE topics (
 CREATE TABLE posts (
     post_id INT NOT NULL AUTO_INCREMENT,
     topic_id INT NOT NULL,
-    parent VARCHAR(10) DEFAULT NULL,
+    parent CHAR(64) DEFAULT NULL,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified TIMESTAMP DEFAULT NULL,
     user_id INT NOT NULL,
-    hexdigest CHAR(10) NOT NULL,
+    hexdigest CHAR(64) NOT NULL,
     state ENUM("VISIBLE", "ARCHIVED") NOT NULL DEFAULT "VISIBLE",
     body TEXT NOT NULL, -- 65535 chars
 
@@ -86,7 +86,7 @@ CREATE TABLE attachments (
     uploaded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mime_type VARCHAR(255) NOT NULL,
     file_name VARCHAR(1024) NOT NULL,
-    hexdigest CHAR(10) NOT NULL,
+    hexdigest CHAR(64) NOT NULL,
     data JSON NOT NULL DEFAULT "{}",
 
     INDEX post_id_ik (post_id),

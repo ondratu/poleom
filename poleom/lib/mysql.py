@@ -10,6 +10,7 @@ from MySQLdb.converters import conversions  # type: ignore[import-untyped]
 from .. import __name__ as appname
 
 LOGGER = logging.getLogger(appname)
+HEX_LEN = 12  # Hexdigest column length
 
 
 def dict2str(obj: dict, _):
