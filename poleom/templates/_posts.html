@@ -15,7 +15,7 @@
   <div class="body">
     {{ post.body|md2rst|rst2html }}
     <div class="signature">{{ (post.user.signature or "")|md2rst|rst2html }}</div>
-    <div class="footer">Posted: {{ post.created }}</div>
+    <div class="footer">Posted: {{ post.created|local(time_zone) }}</div>
   </div>
   <div class="clear"></div>
 </div>
@@ -26,7 +26,7 @@
 <h3 id="new-post">New Post <small class="right">Re: {{ topic.title }}</small></h3>
 
 {% if user %}
-<form method="post" action="/s/{{ section.title }}/{{ topic.title }}">
+<form method="post" action="/s/{{ section.path }}/{{ topic.path }}">
   <label for="post-editor">Post:</label>
   <div class="right in-replay">
     <label>In Replay:</label>

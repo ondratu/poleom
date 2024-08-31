@@ -1,12 +1,13 @@
 """Response generate module."""
 import hashlib
 import re
+from datetime import datetime
 from gettext import NullTranslations
 from importlib.resources import files
 from io import StringIO
 from os.path import join
 
-# docutils_tinyhtml
+from dateutil.tz.tz import tzfile  # type: ignore[import]
 from docutils.core import publish_parts  # type: ignore[import]
 from docutils_tinyhtml import Writer
 from jinja2 import Environment, FileSystemLoader
@@ -80,13 +81,19 @@ def sha256(txt: str):
     return hashlib.sha256(txt.encode("utf-8")).hexdigest()
 
 
+def local(value: datetime, time_zone: tzfile):
+    """Transfer UTC datetime to local timezone."""
+    return value.astimezone(time_zone)
+
+
 environment.globals["title"] = app.title
 environment.filters["md2rst"] = md2rst
 environment.filters["rst2html"] = jinja_rst2html
 environment.filters["sha256"] = sha256
+environment.filters["local"] = local
 
 
-def generate_page(template, **kwargs):
+def render_template(template, **kwargs):
     """Return generated ouptut fromjinja template."""
     if app.debug:
         env = environment.overlay()
@@ -95,6 +102,8 @@ def generate_page(template, **kwargs):
         env.globals["template_info"].template = template
     else:
         env = environment
+
+    env.globals["time_zone"] = app.TIME_ZONE  # TODO: user.time_zone or ...
 
     tmpl = env.get_template(template)
     return tmpl.render(kwargs)

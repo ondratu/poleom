@@ -2,8 +2,8 @@
 {% include("_header.html") %}
 
 <ul class="breadcrumb">
-  <li><a href="/">Root</a></li>
-  <li><a href="/s/{{ section.title }}">{{ section.title }}</a></li>
+  <li><a href="/">{{ title }}</a></li>
+  <li><a href="/s/{{ section.path }}">{{ section.title }}</a></li>
   <li class="active">{{ topic.title }}</li>
 </ul>
 

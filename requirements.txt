@@ -1,3 +1,4 @@
+python-dateutil
 PoorWSGI
 jinja2_template_info
 docutils

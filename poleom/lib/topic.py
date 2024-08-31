@@ -1,16 +1,15 @@
 """Topic record model."""
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
-from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
+from .mysql import DB_CONV, DictCursor, enum2str
 from .pager import Pager
-
-# pylint: disable=duplicate-code
 
 
 @dataclass
@@ -27,6 +26,7 @@ class Topic:
     _id: int
     section_id: int
     title: str
+    path: str
     state: State = State.OPEN
     pinned: bool = False
     count: int = field(init=False, default=0)
@@ -47,6 +47,7 @@ class Topic:
             "id": self._id,
             "section_id": self.section_id,
             "title": self.title,
+            "path": self.path,
             "state": self.state,
             "pinned": self.pinned,
         }
@@ -55,20 +56,23 @@ class Topic:
     def from_row(row):
         """Return section entity from DB row."""
         return Topic(row["topic_id"], row["section_id"], row["title"],
-                     Topic.State(row["state"]), row["pinned"])
+                     row["path"], Topic.State(row["state"]), row["pinned"])
 
     @staticmethod
     def create(conn: Connection, section_id: int, title: str,
                state: State = State.OPEN, pinned: bool = False):
         """Create new topic in db."""
-        topic = Topic(0, section_id, title, state, pinned)
+        path = re.sub(r"\W+", "-", title.lower()).strip("-")
+        topic = Topic(0, section_id, title, path, state, pinned)
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO topics (section_id, title, state, pinned)
-                    VALUES (%(section_id)s, %(title)s, %(state)s, %(pinned)s)
-                """, dict(topic.to_dict(), state=topic.state.value))
+                    INSERT INTO topics
+                        (section_id, title, path, state, pinned)
+                    VALUES (%(section_id)s, %(title)s, %(path)s, %(state)s,
+                        %(pinned)s)
+                """, topic.to_dict())
                 topic._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
                 return topic
@@ -89,14 +93,14 @@ class Topic:
             return Topic.from_row(row)
 
     @staticmethod
-    def find(conn: Connection, section_id: int, title: str):
+    def find(conn: Connection, section_id: int, path: str):
         """Found item by title."""
         with conn.cursor(DictCursor) as cur:
             cur.execute(
                 """
                 SELECT * FROM topics
-                WHERE section_id=%(section_id)s AND title=%(title)s
-                """, {"section_id": section_id, "title": title})
+                WHERE section_id=%(section_id)s AND path=%(path)s
+                """, {"section_id": section_id, "path": path})
             row = cur.fetchone()
             if not row:
                 return None
@@ -113,7 +117,6 @@ class Topic:
         """Update existing topic in db."""
         cols = ["title", "state", "pinned"]
         vals = self.to_dict()
-        vals["state"] = self.state.value
 
         sql = ",".join(f"{col}=%({col})s" for col in cols)
 
@@ -148,3 +151,6 @@ class Topic:
                 WHERE section_id=%(section_id)s
             """, {"section_id": section_id})
             pager.total = cur.fetchone()["count"]
+
+
+DB_CONV[Topic.State] = enum2str

@@ -1,12 +1,13 @@
 """Section record model"""
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
-from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
+from .mysql import DB_CONV, DictCursor, enum2str
 
 # pylint: disable=duplicate-code
 
@@ -23,6 +24,7 @@ class Section:
 
     _id: int
     title: str
+    path: str
     description: str
     state: State = State.OPEN
     private: bool = False
@@ -41,6 +43,7 @@ class Section:
         return {
             "id": self._id,
             "title": self.title,
+            "path": self.path,
             "description": self.description,
             "state": self.state,
             "private": self.private,
@@ -49,21 +52,28 @@ class Section:
     @staticmethod
     def from_row(row):
         """Return section entity from DB row."""
-        return Section(row["section_id"], row["title"], row["description"],
-                       Section.State(row["state"]), row["private"])
+        return Section(row["section_id"], row["title"], row["path"],
+                       row["description"], Section.State(row["state"]),
+                       row["private"])
 
     @staticmethod
-    def create(conn: Connection, title: str, description: str,
-               state: State = State.OPEN, private: bool = False):
+    def create(conn: Connection,
+               title: str,
+               description: str,
+               state: State = State.OPEN,
+               private: bool = False):
         """Create new section in db."""
-        section = Section(0, title, description, state, private)
+        path = re.sub(r"\W+", "-", title.lower()).strip("-")
+        section = Section(0, title, path, description, state, private)
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO sections (title, description, state, private)
-                    VALUES (%(title)s, %(description)s, %(state)s, %(private)s)
-                """, dict(section.to_dict(), state=section.state.value))
+                    INSERT INTO sections
+                        (title, path, description, state, private)
+                    VALUES (%(title)s, %(path)s, %(description)s, %(state)s,
+                            %(private)s)
+                """, section.to_dict())
                 section._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
                 return section
@@ -84,13 +94,13 @@ class Section:
             return Section.from_row(row)
 
     @staticmethod
-    def find(conn: Connection, title: str):
+    def find(conn: Connection, path: str):
         """Found item by title."""
         with conn.cursor(DictCursor) as cur:
             cur.execute(
                 """
-                SELECT * FROM sections WHERE title=%(title)s
-                """, {"title": title})
+                SELECT * FROM sections WHERE path=%(path)s
+                """, {"path": path})
             row = cur.fetchone()
             if not row:
                 return None
@@ -107,14 +117,13 @@ class Section:
         """Update existing section in db."""
         cols = ["title", "description", "state", "private"]
         vals = self.to_dict()
-        vals["state"] = self.state.value
 
         sql = ",".join(f"{col}=%({col})s" for col in cols)
 
         with conn.cursor() as cur:
             # ruff: noqa: S608
-            cur.execute(
-                f"UPDATE sections SET {sql} WHERE section_id = %(id)s", vals)
+            cur.execute(f"UPDATE sections SET {sql} WHERE section_id = %(id)s",
+                        vals)
 
     @staticmethod
     def list(conn: Connection):
@@ -136,3 +145,6 @@ class Section:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM sections")
             return cur.fetchone()[0]
+
+
+DB_CONV[Section.State] = enum2str

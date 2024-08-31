@@ -1,17 +1,17 @@
 """User change request model."""
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
-from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
 from .core import app
+from .mysql import DB_CONV, DictCursor, enum2str
 from .smtp import Smtp
 from .user import User
-from .view import generate_page
+from .view import render_template
 
 
 @dataclass
@@ -51,15 +51,15 @@ class ChangeRequest:
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
-        return ChangeRequest(row["user_id"], row["created"], row["accepted"],
-                             row["hexdigest"],
+        return ChangeRequest(row["user_id"], row["created"],
+                             row["accepted"], row["hexdigest"],
                              ChangeRequest.State(row["state"]),
                              json.loads(row["data"]))
 
     @staticmethod
     def create(conn: Connection, user_id: int, state: State, data: dict):
         """Create or update change request for user in db."""
-        created = datetime.now()
+        created = datetime.now(UTC)
         hexdigest = sha256(
             f"{created.timestamp()}.{user_id}".encode()).hexdigest()
         change_request = ChangeRequest(user_id, created, None, hexdigest,
@@ -73,16 +73,13 @@ class ChangeRequest:
                 VALUES
                     (%(user_id)s, %(created)s, %(hexdigest)s, %(state)s,
                      %(data)s)
-                """,
-                dict(change_request.to_dict(),
-                     state=change_request.state.value,
-                     data=json.dumps(change_request.data)))
+                """, change_request.to_dict())
             conn.commit()
             return change_request
 
     def accept(self, conn: Connection):
         """Accept existing change_request in db."""
-        self.accepted = datetime.now()
+        self.accepted = datetime.now(UTC)
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -103,10 +100,7 @@ class ChangeRequest:
                 return None
             return ChangeRequest.from_row(row)
 
-    def send_email(self,
-                   smtp: Smtp,
-                   user: User,
-                   url: str):
+    def send_email(self, smtp: Smtp, user: User, url: str):
         """Send email depend of type of change request."""
         if self.state == ChangeRequest.State.REGISTER:
             subject = f"Sign up to {app.title} confirmation"
@@ -122,6 +116,8 @@ class ChangeRequest:
             raise RuntimeError(msg)
 
         smtp.send_email_txt(
-            subject,
-            user.email,
-            generate_page(template, user=user, change_request=self, url=url))
+            subject, user.email,
+            render_template(template, user=user, change_request=self, url=url))
+
+
+DB_CONV[ChangeRequest.State] = enum2str

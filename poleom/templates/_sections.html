@@ -28,7 +28,7 @@
 {% endif %}
 
 {% for section in sections %}
-<a href="/s/{{section.title}}">
+<a href="/s/{{section.path}}">
   <h3 class="section">
     {{ section.title }}
     <small class="right">Topics: {{ section.count }}</small>
@@ -36,12 +36,12 @@
   <p>{{ section.description|md2rst|rst2html }}</p>
 
   {% for topic in section.topics %}
-  <a href="/s/{{ section.title }}/{{ topic.title }}">
+  <a href="/s/{{ section.path }}/{{ topic.path }}">
   <h4 class="topic">
     {{topic.title }}
     <div class="right">
       <span>Posts: {{ topic.count }}</span>
-      <span rel="dh-updated">Last: <b>{{ topic.last }}</b></span>
+      <span rel="dh-updated">Last: <b>{{ topic.last|local(time_zone) }}</b></span>
       <span rel="author">by {{ topic.user_name }}</span>
     </div>
   </h4></a>

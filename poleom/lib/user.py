@@ -7,9 +7,9 @@ from hashlib import sha3_512
 import bcrypt
 from MySQLdb import IntegrityError  # type: ignore[import-untyped]
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
-from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
+from .mysql import DB_CONV, DictCursor, enum2str
 
 # Three options of the password format
 # >= 10 chars, one lowercase letter, one uppercase letter, one number
@@ -95,9 +95,7 @@ class User:
                     VALUES
                         (%(name)s, %(email)s, %(password)s, %(signature)s,
                          %(state)s, %(role)s)
-                """, dict(user.to_dict(), state=user.state.value,
-                          role=user.role.value,
-                          password=hashed.decode("utf-8")))
+                """, dict(user.to_dict(), password=hashed.decode("utf-8")))
                 user._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()
                 return user
@@ -150,8 +148,6 @@ class User:
         """Update existing user in db."""
         cols = ["name", "email", "signature", "state", "role"]
         vals = self.to_dict()
-        vals["state"] = self.state.value
-        vals["role"] = self.role.value
         if password:
             cols.append("password")
             hashed = bcrypt.hashpw(
@@ -184,3 +180,7 @@ class User:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM users")
             return cur.fetchone()[0]
+
+
+DB_CONV[User.State] = enum2str
+DB_CONV[User.Role] = enum2str

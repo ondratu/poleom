@@ -16,7 +16,7 @@ from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.smtp import Email
 from .lib.user import User
-from .lib.view import generate_page
+from .lib.view import render_template
 
 
 @app.route("/login")
@@ -25,7 +25,7 @@ def login_page(req):
     """Return log in page."""
     if req.user:
         redirect(req.referer or "/")
-    return generate_page("user/login.html", redirect_url=req.referer)
+    return render_template("user/login.html", redirect_url=req.referer)
 
 
 @app.route("/login", method=state.METHOD_POST)
@@ -38,10 +38,10 @@ def login(req):
     user = User.find(req.db, email, password)
     if not user:
         uri = parse.urlparse(req.referer)
-        return generate_page("user/login.html",
-                             email=email,
-                             redirect_url=req.referer,
-                             error=True)
+        return render_template("user/login.html",
+                               email=email,
+                               redirect_url=req.referer,
+                               error=True)
 
     session = create_login_cookie(user.id)
     uri = parse.urlparse(redirect_url)
@@ -64,13 +64,13 @@ def logout(req):
 @check_login_cookie
 def signup_page(_):
     """Return log in page."""
-    return generate_page("user/signup.html", errors={})
+    return render_template("user/signup.html", errors={})
 
 
 @app.route("/signup-check")
 def signup_check(_):
     """Test check page only"""
-    return generate_page("user/signup-check.html", sender=app.smtp.sender)
+    return render_template("user/signup-check.html", sender=app.smtp.sender)
 
 
 @app.route("/signup", method=state.METHOD_POST)
@@ -100,22 +100,22 @@ def signup(req):
         errors["accept_terms"] = FormError.MISSING
 
     if errors:
-        return generate_page("user/signup.html",
-                             name=name,
-                             email=email,
-                             signature=signature,
-                             accept_terms=accept_terms,
-                             errors=errors)
+        return render_template("user/signup.html",
+                               name=name,
+                               email=email,
+                               signature=signature,
+                               accept_terms=accept_terms,
+                               errors=errors)
 
     try:
         user = User.create(req.db, name, email, password, signature)
     except DuplicityError:
         errors["email"] = FormError.DUPLICITY
-        return generate_page("user/signup.html",
-                             name=name,
-                             email=email,
-                             signature=signature,
-                             errors=errors)
+        return render_template("user/signup.html",
+                               name=name,
+                               email=email,
+                               signature=signature,
+                               errors=errors)
 
     change_request = ChangeRequest.create(
         req.db, user.id, ChangeRequest.State.REGISTER, {
@@ -124,7 +124,7 @@ def signup(req):
         })
     change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return generate_page("user/signup-check.html", sender=app.smtp.sender)
+    return render_template("user/signup-check.html", sender=app.smtp.sender)
 
 
 @app.route("/user/profile")
@@ -141,14 +141,14 @@ def user_profile(req: Request):
         if user is None:
             abort(state.HTTP_FORBIDDEN)
 
-    return generate_page("user/profile.html", user=user, me=req.user)
+    return render_template("user/profile.html", user=user, me=req.user)
 
 
 @app.route("/user/account")
 @auth_user
 def user_account(req):
     """Return user account form."""
-    return generate_page("user/account.html", user=req.user)
+    return render_template("user/account.html", user=req.user)
 
 
 @app.route("/user/account", method=state.METHOD_POST)
@@ -182,7 +182,9 @@ def user_account_set(req):
     req.user.signature = signature
 
     if errors:
-        return generate_page("user/account.html", user=req.user, errors=errors)
+        return render_template("user/account.html",
+                               user=req.user,
+                               errors=errors)
 
     req.user.update(req.db, password=password)
 
@@ -196,8 +198,9 @@ def user_account_set(req):
         if password:
             data["password"] = True
 
-        change_request = ChangeRequest.create(
-            req.db, req.user.id, ChangeRequest.State.INFO_CHANGED, data)
+        change_request = ChangeRequest.create(req.db, req.user.id,
+                                              ChangeRequest.State.INFO_CHANGED,
+                                              data)
         change_request.send_email(app.smtp, req.user, req.construct_url(""))
 
     return RedirectResponse("/user/account#save-done")
@@ -207,7 +210,7 @@ def user_account_set(req):
 def reset_password_request(req: Request):
     """Return user account form."""
     if req.method_number != state.METHOD_POST:
-        return generate_page("user/reset-password-request.html")
+        return render_template("user/reset-password-request.html")
 
     email = req.form.get("email", "").strip()
 
@@ -222,7 +225,8 @@ def reset_password_request(req: Request):
         errors["email"] = FormError.MISMATCH
 
     if errors:
-        return generate_page("user/reset-password-request.html", errors=errors)
+        return render_template("user/reset-password-request.html",
+                               errors=errors)
 
     change_request = ChangeRequest.create(
         req.db, user.id, ChangeRequest.State.PASSWORD, {
@@ -231,7 +235,7 @@ def reset_password_request(req: Request):
         })
     change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return generate_page("user/reset-password-request.html", sent=True)
+    return render_template("user/reset-password-request.html", sent=True)
 
 
 @app.route("/chr/<hexdigest:hex>")
@@ -259,8 +263,8 @@ def accept_change_request(req: Request, hexdigest: str):
         return res
 
     if change_request.state == ChangeRequest.State.PASSWORD:
-        return generate_page("user/change-request.html",
-                             change_request=change_request)
+        return render_template("user/change-request.html",
+                               change_request=change_request)
 
     return Response(status_code=state.HTTP_BAD_REQUEST)
 
@@ -287,8 +291,9 @@ def post_change_request(req, hexdigest: str):
             errors["password_again"] = FormError.MISMATCH
 
         if errors:
-            return generate_page("user/reset_password.html",
-                                 change_request=change_request, errors=errors)
+            return render_template("user/reset_password.html",
+                                   change_request=change_request,
+                                   errors=errors)
 
         user = User.get(req.db, change_request.user_id)
         user.update(req.db, password=password)

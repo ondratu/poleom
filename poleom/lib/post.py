@@ -1,11 +1,11 @@
 """Post record model"""
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
-from MySQLdb.cursors import DictCursor  # type: ignore[import-untyped]
 
+from .mysql import DictCursor
 from .pager import Pager
 
 
@@ -26,7 +26,7 @@ class Post:
         """Post.id is read only."""
         return self._id
 
-    def dict(self):
+    def to_dict(self):
         """Return dictionary from instance.
 
         It uses only databases row values.
@@ -55,7 +55,7 @@ class Post:
                body: str,
                parent: str | None = None):
         """Create new post in db."""
-        created = datetime.now()
+        created = datetime.now(UTC)
         hexdigest = sha256(
             f"{created.timestamp()}.{user_id}".encode()).hexdigest()[:10]
         post = Post(0, topic_id, parent, created, user_id, hexdigest, body)
@@ -66,7 +66,7 @@ class Post:
                         hexdigest, body)
                 VALUES (%(topic_id)s, %(parent)s, %(created)s, %(user_id)s,
                         %(hexdigest)s, %(body)s)
-            """, post.dict())
+            """, post.to_dict())
             post._id = cur.lastrowid  # pylint: disable=protected-access
             conn.commit()
             return post

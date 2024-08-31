@@ -31,25 +31,27 @@ CREATE TABLE change_request (
 CREATE TABLE sections (
     section_id INT NOT NULL AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
+    path VARCHAR(255) NOT NULL,
     description VARCHAR(255) DEFAULT NULL,
     state ENUM("OPEN", "LOCKED", "ARCHIVED") NOT NULL DEFAULT "OPEN",
     weight INT NOT NULL DEFAULT 0,
     private BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (section_id),
-    UNIQUE KEY title_uk (title)
+    UNIQUE KEY path_uk (path)
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE topics (
     topic_id INT NOT NULL AUTO_INCREMENT,
     section_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
+    path VARCHAR(255) NOT NULL,
     state ENUM("OPEN", "LOCKED", "ARCHIVED") NOT NULL DEFAULT "OPEN",
     pinned BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (topic_id),
     INDEX section_id_ik (section_id),
-    UNIQUE KEY section_id_title_uk (section_id, title),
+    UNIQUE KEY section_id_path_uk (section_id, path),
     FOREIGN KEY topics_section_id_fk (section_id)
         REFERENCES sections(section_id) ON DELETE CASCADE
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -97,10 +99,10 @@ CREATE TABLE attachments (
 INSERT INTO users (name, email, password, state, role)
     VALUES ("Admin", "root@localhost", "", "ACTIVE", "ADMIN");
 
-INSERT INTO sections (title, description, state) VALUES
-    ("Announcements", "Updates from maintainers", "LOCKED");
-INSERT INTO sections (title, description) VALUES
-    ("General", "Chat about anything and everything here"),
-    ("Ideas", "Share ideas for new features"),
-    ("Q&A", "Ask the community for help"),
-    ("Show and tell", "Show off something you've made");
+INSERT INTO sections (title, path, description, state) VALUES
+    ("Announcements", "announcements", "Updates from maintainers", "LOCKED");
+INSERT INTO sections (title, path, description) VALUES
+    ("General", "general", "Chat about anything and everything here"),
+    ("Ideas", "ideas", "Share ideas for new features"),
+    ("Q&A", "q-a", "Ask the community for help"),
+    ("Show and tell", "show-and-tell", "Show off something you've made");

@@ -10,7 +10,7 @@ from .lib.exceptions import DuplicityError
 from .lib.pager import Pager
 from .lib.section import Section
 from .lib.topic import Topic
-from .lib.view import generate_page
+from .lib.view import render_template
 
 
 @app.route("/s", method=state.METHOD_POST)
@@ -24,26 +24,26 @@ def create_section(req):
         redirect(uri._replace(fragment="empty_section_title").geturl())
 
     try:
-        Section.create(req.db, title, description)
+        section = Section.create(req.db, title, description)
     except DuplicityError:
         uri = parse.urlparse(req.referer)
         redirect(uri._replace(fragment="duplicity_section_title").geturl())
 
-    redirect(f"/s/{title}")
+    redirect(f"/s/{section.path}")
 
 
-@app.route("/s/<title>")
+@app.route("/s/<path>")
 @check_login_cookie
-def section_detail(req, title: str):
+def section_detail(req, path: str):
     """Return section detail."""
-    section = Section.find(req.db, title)
+    section = Section.find(req.db, path)
     if not section:
         abort(404)
 
     pager = Pager(limit=20)
     topics = list(Topic.list(req.db, pager, section_id=section.id))
-    return generate_page("section.html",
-                         user=req.user,
-                         section=section,
-                         topics=topics,
-                         pager=pager)
+    return render_template("section.html",
+                           user=req.user,
+                           section=section,
+                           topics=topics,
+                           pager=pager)

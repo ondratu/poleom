@@ -3,15 +3,12 @@ from MySQLdb import ProgrammingError  # type: ignore[import-untyped]
 from poorwsgi import redirect, state
 from poorwsgi.response import JSONResponse
 
-from .lib.auth import (
-    auth_user,
-    check_login_cookie,
-)
+from .lib.auth import auth_user, check_login_cookie
 from .lib.core import app
 from .lib.pager import Pager
 from .lib.section import Section
 from .lib.topic import Topic
-from .lib.view import generate_page, md2rst, parse_system_messages, rst2html
+from .lib.view import md2rst, parse_system_messages, render_template, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
 
@@ -30,15 +27,13 @@ def root(req):
     except ProgrammingError as err:
         if err.args[0] == TABLE_DOESNT_EXIST_ERR:
             redirect("/wizard")
-    return generate_page("index.html",
-                         user=req.user,
-                         sections=sections)
+    return render_template("index.html", user=req.user, sections=sections)
 
 
 @app.route("/terms")
 def terms(_):
     """Return Terms."""
-    return generate_page("terms.html")
+    return render_template("terms.html")
 
 
 @app.route("/preview", method=state.METHOD_POST)
