@@ -15,6 +15,8 @@ from .lib.topic import Topic
 from .lib.user import User
 from .lib.view import render_template
 
+ITEMS_ON_PAGE = 10
+
 
 def find_topic(db: Connection, section_path: str, topic_path: str):
     """Find topic in section on raise 404 HTTPException."""
@@ -25,6 +27,16 @@ def find_topic(db: Connection, section_path: str, topic_path: str):
     if not topic:
         abort(404)
     return section, topic
+
+
+def topic_page(req, topic_id: int):
+    """Get data for topic page."""
+    pager = Pager(limit=ITEMS_ON_PAGE)
+    pager.bind(req.args)
+    posts = list(Post.list(req.db, pager, topic_id=topic_id))
+    for post in posts:
+        post.user = User.get(req.db, post.user_id)
+    return posts, pager
 
 
 @app.route("/s/<section_path>", method=state.METHOD_POST)
@@ -59,12 +71,7 @@ def create_topic(req, section_path: str):
 def topic_detail(req, section_path: str, topic_path: str):
     """Return section detail."""
     section, topic = find_topic(req.db, section_path, topic_path)
-
-    pager = Pager(limit=10)
-    pager.bind(req.args)
-    posts = list(Post.list(req.db, pager, topic_id=topic.id))
-    for post in posts:
-        post.user = User.get(req.db, post.user_id)
+    posts, pager = topic_page(req, topic.id)
 
     return render_template("topic.html",
                            user=req.user,

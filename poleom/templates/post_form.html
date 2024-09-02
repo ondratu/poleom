@@ -1,0 +1,43 @@
+{# vim:set softtabstop=2: -#}
+{% set page = "" %}
+{% include("_header.html") %}
+
+<ul class="breadcrumb">
+  <li><a href="/">{{ title }}</a></li>
+  <li><a href="/s/{{ section.path }}">{{ section.title }}</a></li>
+  <li><a href="/s/{{ section.path }}/{{ topic.path }}">{{ topic.title }}</a></li>
+  <li class="active">{{ post.hexdigest }}</li>
+</ul>
+
+<h3 id="new-post">Edit Post</h3>
+
+<form method="POST">
+  <label class="{{ "error" if "body" in errors }}" for="post-editor">Post:</label>
+  <div class="right in-replay">
+    <label>In Replay:</label>
+    <input id="parent_hexdigest" name="parent" value="{{ post.parent }}"
+           readonly>
+  </div>
+  <textarea name="body" id="post-editor"
+            placeholder="Your post message" cols="80" rows="10">{{ post.body }}</textarea>
+  <br/>
+  {% if "body" in errors %}
+  <div class="error">{{ errors.body.value }}</div>
+  {% endif -%}
+
+  <input value="Update" type="submit">
+  <input value="Undo" type="reset">
+  <a class="right"
+     href="/s/{{ section.path }}/{{ topic.path }}{{ offset }}#{{post.hexdigest }}">
+    Cancel</a>
+</form>
+
+<script>
+  $(document).ready(function() {
+    let post_editor = new DocutilsEditor('#post-editor');
+  });
+</script>
+
+
+
+{% include("_footer.html") %}

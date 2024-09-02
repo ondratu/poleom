@@ -16,7 +16,8 @@ class Post:
     _id: int
     topic_id: int
     parent: str | None  # parent post hexdigest
-    created: datetime | None
+    created: datetime
+    modified: datetime | None
     user_id: int
     hexdigest: str
     body: str
@@ -36,6 +37,7 @@ class Post:
             "topic_id": self.topic_id,
             "parent": self.parent,
             "created": self.created,
+            "modified": self.modified,
             "user_id": self.user_id,
             "hexdigest": self.hexdigest,
             "body": self.body,
@@ -45,8 +47,8 @@ class Post:
     def from_row(row):
         """Return Post from row."""
         return Post(row["post_id"], row["topic_id"], row["parent"],
-                    row["created"], row["user_id"], row["hexdigest"],
-                    row["body"])
+                    row["created"], row["modified"], row["user_id"],
+                    row["hexdigest"], row["body"])
 
     @staticmethod
     def create(conn: Connection,
@@ -58,7 +60,8 @@ class Post:
         created = datetime.now(UTC)
         hexdigest = sha256(
             f"{created.timestamp()}.{user_id}".encode()).hexdigest()[:10]
-        post = Post(0, topic_id, parent, created, user_id, hexdigest, body)
+        post = Post(0, topic_id, parent, created, None, user_id, hexdigest,
+                    body)
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -101,16 +104,19 @@ class Post:
 
     def update(self, conn: Connection):
         """Update existing item in db."""
+        self.modified = datetime.now(UTC)
         with conn.cursor() as cur:
             cur.execute(
                 """
                 UPDATE posts SET
-                    body=%(body)s
+                    body=%(body)s, modified=%(modified)s
                 WHERE post_id = %(id)s
             """, {
                     "body": self.body,
+                    "modified": self.modified,
                     "id": self._id,
                 })
+            conn.commit()
 
     @staticmethod
     def list(conn: Connection, pager: Pager, topic_id: int):
@@ -140,6 +146,6 @@ class Post:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT COUNT(*) FROM posts WHERE
+                SELECT COUNT(*) FROM posts
                 WHERE topic_id=%(topic_id)s""", {"topic_id": topic_id})
             return cur.fetchone()[0]

@@ -223,14 +223,14 @@ button:hover,
 .form label textarea {
   float: right;
 }
-.form label.error > input {
+form label.error > input {
   border-color: red;
 }
 .form div {
   padding: 5pt;
   clear: both;
 }
-.form div.error {
+form div.error {
   color: red;
 }
 .form div.info {

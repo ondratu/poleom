@@ -29,6 +29,11 @@ class Pager:
         """Return acutal page number."""
         return int(self.offset / self.limit)
 
+    @property
+    def last(self):
+        """Return offset for last page"""
+        return self.limit * self.pages
+
     def bind(self, form):
         """Bind variables from Request.Args or Request.Form."""
         self.offset = form.getfirst("offset", self.offset, int)
