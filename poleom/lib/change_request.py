@@ -24,7 +24,7 @@ class ChangeRequest:
         PASSWORD = "PASSWORD"  # noqa: S105
         INFO_CHANGED = "INFO_CHANGED"
         INFO_BANNED = "INFO_BANNED"
-        INFO_ACTIVATEDD = "INFO_ACTIVATED"
+        INFO_ACTIVATED = "INFO_ACTIVATED"
         INFO_DELETED = "INFO_DELETED"
 
     user_id: int
@@ -100,7 +100,7 @@ class ChangeRequest:
                 return None
             return ChangeRequest.from_row(row)
 
-    def send_email(self, smtp: Smtp, user: User, url: str):
+    def send_email(self, smtp: Smtp, user: User, url: str = ""):
         """Send email depend of type of change request."""
         if self.state == ChangeRequest.State.REGISTER:
             subject = f"Sign up to {app.title} confirmation"
@@ -111,6 +111,15 @@ class ChangeRequest:
         elif self.state == ChangeRequest.State.INFO_CHANGED:
             subject = f"Credetials for {app.title} changed"
             template = "user/changed.jinja"
+        elif self.state == ChangeRequest.State.INFO_BANNED:
+            subject = f"Your account on {app.title} was banned"
+            template = "user/banned.jinja"
+        elif self.state == ChangeRequest.State.INFO_ACTIVATED:
+            subject = f"Your account on {app.title} is enabled"
+            template = "user/enabled.jinja"
+        elif self.state == ChangeRequest.State.INFO_DELETED:
+            subject = f"Your account on {app.title} was deleted"
+            template = "user/deleted.jinja"
         else:
             msg = "No mail template selected"
             raise RuntimeError(msg)

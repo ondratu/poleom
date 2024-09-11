@@ -53,9 +53,9 @@ def topic_page(req, topic_id: int, check: bool = False):
 
 
 @app.route("/s/<section_path>", method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def create_topic(req, section_path: str):
-    """Return section detail."""
+    """Create new topic."""
     section = Section.find(req.db, section_path)
     if not section:
         abort(404)
@@ -87,7 +87,7 @@ def topic_detail(req, section_path: str, topic_path: str):
     posts, pager, etag = topic_page(req, topic.id, check=True)
 
     return Response(render_template("topic.html",
-                                    user=req.user,
+                                    me=req.user,
                                     section=section,
                                     topic=topic,
                                     posts=posts,

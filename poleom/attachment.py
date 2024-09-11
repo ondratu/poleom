@@ -40,7 +40,7 @@ def get_attachment(req: Request, hexdigest: str, file_name: str = ""):
 
 
 @app.route("/a/<hexdigest:hex>", method=state.METHOD_DELETE)
-@auth_user
+@auth_user()
 def delete_attachment(req, hexdigest: str):
     """Return attachment."""
     attachment = Attachment.get(req.db, hexdigest)

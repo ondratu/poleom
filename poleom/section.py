@@ -15,7 +15,7 @@ from .lib.view import render_template
 
 
 @app.route("/s", method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def create_section(req):
     """Create new section."""
     title = req.form.get("title").strip()
@@ -52,7 +52,7 @@ def section_detail(req, path: str):
     check_etag(req.headers, etag)
 
     return Response(render_template("section.html",
-                                    user=req.user,
+                                    me=req.user,
                                     section=section,
                                     topics=topics,
                                     pager=pager),

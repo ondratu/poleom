@@ -1,7 +1,7 @@
 {# vim:set softtabstop=2: -#}
 <h2>Sections:</h2>
 
-{% if user and user.role.value in ("MODERATOR", "ADMIN") %}
+{% if me.is_moderator() %}
 <h3>New Section <span class="right updown-button">&udarr;</span></h3>
 <div>
 

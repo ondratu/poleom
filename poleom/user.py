@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from urllib import parse
 
 from poorwsgi import abort, redirect, state
-from poorwsgi.response import RedirectResponse, Response
+from poorwsgi.response import NoContentResponse, RedirectResponse, Response
 
 from .lib.auth import (
     auth_user,
@@ -14,6 +14,7 @@ from .lib.auth import (
 from .lib.change_request import ChangeRequest
 from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
+from .lib.pager import Pager
 from .lib.smtp import Email
 from .lib.user import User
 from .lib.view import render_template
@@ -128,31 +129,22 @@ def signup(req):
 
 
 @app.route("/user/profile")
-@check_login_cookie
-def user_profile(req: Request):
+@auth_user()
+def profile(req: Request):
     """Return user profile."""
-    user_id = req.args.getfirst("user_id", None, int)
-    if user_id:
-        user = User.get(req.db, user_id)
-        if user is None:
-            abort(state.HTTP_NOT_FOUND)
-    else:
-        user = req.user
-        if user is None:
-            abort(state.HTTP_FORBIDDEN)
-
-    return render_template("user/profile.html", user=user, me=req.user)
+    user = req.user
+    return render_template("user/profile.html", me=req.user, user=user)
 
 
 @app.route("/user/account")
-@auth_user
+@auth_user()
 def user_account(req):
     """Return user account form."""
     return render_template("user/account.html", user=req.user)
 
 
 @app.route("/user/account", method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def user_account_set(req):
     """Change user account."""
     name = req.form.get("name", "").strip()
@@ -303,3 +295,115 @@ def post_change_request(req, hexdigest: str):
         return res
 
     return Response(status_code=state.HTTP_BAD_REQUEST)
+
+
+@app.route("/users")
+@auth_user(User.Role.ADMIN)
+def get_users(req):
+    """Return list of users and their state."""
+    pager = Pager()
+    pager.bind(req.args)
+
+    users = User.list(req.db, pager)
+    return render_template("user/list.html", me=req.user, users=users,
+                           pager=pager)
+
+
+@app.route("/users/<user_id:int>")
+@check_login_cookie
+def user_profile(req: Request, user_id):
+    """Return user profile."""
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+    return render_template("user/profile.html", me=req.user, user=user)
+
+
+@app.route("/users/<user_id:int>/ban", method=state.METHOD_POST)
+@auth_user(role=User.Role.MODERATOR)  # moderator can do that
+def user_ban(req, user_id: int):
+    """Ban user"""
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+    if user.state == User.State.DELETED:
+        abort(state.HTTP_GONE)
+
+    user.state = User.State.BANNED
+    user.update(req.db)
+
+    change_request = ChangeRequest.create(
+        req.db, user.id, ChangeRequest.State.INFO_BANNED, {
+            "user_id": req.user.id,
+            "request_ip": req.remote_addr,
+            "request_browser": req.user_agent,
+        })
+    change_request.send_email(app.smtp, user)
+
+    return NoContentResponse()
+
+
+@app.route("/users/<user_id:int>/ban", method=state.METHOD_DELETE)
+@auth_user(role=User.Role.MODERATOR)  # moderator can do that
+def user_unban(req, user_id: int):
+    """UnBan user"""
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+    if user.state != User.State.BANNED:
+        abort(state.HTTP_PRECONDITION_REQUIRED)
+
+    user.state = User.State.ACTIVE
+    user.update(req.db)
+
+    change_request = ChangeRequest.create(
+        req.db, user.id, ChangeRequest.State.INFO_ACTIVATED, {
+            "user_ip": req.user.id,
+            "request_ip": req.remote_addr,
+            "request_browser": req.user_agent,
+        })
+    change_request.send_email(app.smtp, user)
+
+    return NoContentResponse()
+
+
+@app.route("/users/<user_id:int>", method=state.METHOD_PUT)
+@auth_user(role=User.Role.ADMIN)  # only admin can do that
+def user_update(req: Request, user_id: int):
+    """Update user role."""
+    role = req.json.get("role", "").upper()
+    try:
+        role = User.Role(role)
+    except ValueError:
+        abort(state.HTTP_BAD_REQUEST)
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+    if user.state == User.State.DELETED:
+        abort(state.HTTP_GONE)
+
+    user.role = role
+    user.update(req.db)
+    return NoContentResponse()
+
+
+@app.route("/users/<user_id:int>", method=state.METHOD_DELETE)
+@auth_user(role=User.Role.ADMIN)  # only admin can do that
+def user_delete(req, user_id: int):
+    """Delete user"""
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+    if user.state == User.State.DELETED:
+        abort(state.HTTP_GONE)
+
+    change_request = ChangeRequest.create(
+        req.db, user.id, ChangeRequest.State.INFO_DELETED, {
+            "user_ip": req.user.id,
+            "request_ip": req.remote_addr,
+            "request_browser": req.user_agent,
+        })
+    change_request.send_email(app.smtp, user)
+    user.delete(req.db)
+
+    return NoContentResponse()

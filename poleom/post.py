@@ -13,7 +13,7 @@ from .topic import ITEMS_ON_PAGE, find_topic, topic_page
 
 
 @app.route("/s/<section_path>/<topic_path>", method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def create_post(req, section_path: str, topic_path: str):
     """Create post in topic."""
     section, topic = find_topic(req.db, section_path, topic_path)
@@ -27,7 +27,7 @@ def create_post(req, section_path: str, topic_path: str):
         # pylint: disable=duplicate-code
 
         return render_template("topic.html",
-                               user=req.user,
+                               me=req.user,
                                section=section,
                                topic=topic,
                                posts=posts,
@@ -51,7 +51,7 @@ def create_post(req, section_path: str, topic_path: str):
 
 @app.route("/s/<section_path>/<topic_path>/<hexdigest>",
            method=state.METHOD_GET)
-@auth_user
+@auth_user()
 def form_post(req, section_path: str, topic_path: str, hexdigest: str):
     """Create post in topic."""
     post = Post.find(req.db, hexdigest)
@@ -64,6 +64,7 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
 
     section, topic = find_topic(req.db, section_path, topic_path)
     return render_template("post_form.html",
+                           me=req.user,
                            section=section,
                            topic=topic,
                            post=post,
@@ -72,7 +73,7 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
 
 @app.route("/s/<section_path>/<topic_path>/<hexdigest>",
            method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def update_post(req, section_path: str, topic_path: str, hexdigest: str):
     """Update post."""
     post = Post.find(req.db, hexdigest)
@@ -97,6 +98,7 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
 
         attachments = list(Attachment.list(req.db, post.id))
         return render_template("post_form.html",
+                               me=req.user,
                                section=section,
                                topic=topic,
                                post=post,
@@ -110,7 +112,7 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
 
 
 @app.route("/p/<hexdigest:hex>")
-@auth_user
+@auth_user()
 def get_post(req: Request, hexdigest: str):
     """Return post data identify by hexdigest for reply."""
     post = Post.find(req.db, hexdigest)

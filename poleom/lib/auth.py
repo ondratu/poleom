@@ -1,6 +1,7 @@
 """Authentication and authorization library."""
 from functools import wraps
 
+from poorwsgi import state
 from poorwsgi.response import abort
 from poorwsgi.session import PoorSession, SessionError
 
@@ -16,7 +17,9 @@ def check_login_cookie(fun):
         try:
             session.load(req.cookies)
             if session.data:
-                req.user = User.get(req.db, session.data.get("user_id"))
+                user = User.get(req.db, session.data.get("user_id"))
+                if user and user.state == User.State.ACTIVE:
+                    req.user = user
         except SessionError:
             pass
         return fun(req, *args, **kwargs)
@@ -42,15 +45,20 @@ def destroy_login_cookie(cookies) -> PoorSession:
     return session
 
 
-def auth_user(fun):
-    """Authorize user.
+def auth_user(role: User.Role = User.Role.MEMBER):
+    """Authorize user."""
+    def wrapper(fun):
+        @wraps(fun)
+        @check_login_cookie
+        def handler(req, *args, **kwargs):
+            if not req.user:
+                abort(state.HTTP_UNAUTHORIZED)
+            if req.user.state != User.State.ACTIVE:
+                abort(state.HTTP_FORBIDDEN)  # only active users
 
-    FIXME: at this moment all login user can anything....
-    """
-    @wraps(fun)
-    @check_login_cookie
-    def handler(req, *args, **kwargs):
-        if not req.user:
-            abort(401)
-        return fun(req, *args, **kwargs)
-    return handler
+            if not req.user.check_role(role):
+                abort(state.HTTP_FORBIDDEN)  # need some another role
+
+            return fun(req, *args, **kwargs)
+        return handler
+    return wrapper

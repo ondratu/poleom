@@ -25,21 +25,26 @@
     <nav>
       <div class="page-width">
         <h1 class="title"><a href="/">{{ title }}</a></h1>
-      {% if user %}
+      {%- if me %}
         <div class="dropdown">
-          <a>{{ user.name }}</a>
+          <a>{{ me.name }}</a>
           <div class="menu" data="account">
             <a href="/user/profile">Profile</a>
             <a href="/user/account">Settings</a>
+            <hr/>
+          {%- if me.is_admin() %}
+            <a href="/users">Users</a>
+            <hr/>
+          {%- endif %}
             <a href="/logout">Log out</a>
           </div>
         </div>
-      {% elif notheader is not defined %}
+      {%- elif notheader is not defined %}
         <a href="/login" class="button">Log in</a>
         <a href="/signup" class="button">Sign up</a>
-      {% else %}
+      {%- else %}
         <div>&nbsp;</div>
-      {% endif %}
+      {%- endif %}
       </div>
     </nav>
 

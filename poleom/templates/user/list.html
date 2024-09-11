@@ -1,0 +1,62 @@
+{# vim:set softtabstop=2: -#}
+{% include("_header.html") %}
+
+    <h2>Users</h2>
+    <table class="users">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>E-mail</th>
+        <th>Role</th>
+        <th>State</th>
+        <th>Action</th>
+      </tr>
+    {% for user in users %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td><div>
+          <img src="https://gravatar.com/avatar/{{ user.email|sha256 }}?s=32">
+          <a href="/users/{{ user.id }}" data="name">{{ user.name }}</a>
+          </div></td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role.value }}</td>
+        <td>{{ user.state.value }}</td>
+        <td class="action">
+          {% if user.id != me.id  %}
+          {%- if user.state.value != "DELETED" %}
+            {% if user.role.value != "MEMBER" %}
+            <a member="{{ user.id }}">Member</a> |
+            {% endif %}
+            {% if user.role.value != "MODERATOR" %}
+            <a moderator="{{ user.id }}">Moderator</a> |
+            {% endif %}
+            {% if user.role.value != "ADMIN" %}
+            <a admin="{{ user.id }}">Admin</a> |
+            {% endif %}
+          {%- endif %}
+            {% if user.state.value not in ("BANNED", "DELETED") %}
+            <a ban="{{ user.id }}">Ban</a> |
+            {% elif user.state.value == "BANNED" %}
+            <a unban="{{ user.id }}">UnBan</a> |
+            {% endif %}
+            {% if user.state.value != "DELETED" %}
+            <a delete="{{ user.id }}">Delete</a> |
+            {% endif %}
+          {% endif %}
+
+            <a href="/users/{{ user.id }}">Profile</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </table>
+
+  {% include("_pager.html") %}
+
+  <script src="/js/users.js"></script>
+  <script>
+    $(document).ready(function() {
+    let users = new Users();
+  });
+  </script>
+
+  {% include("_footer.html") %}

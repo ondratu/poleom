@@ -1,7 +1,7 @@
 {# vim:set softtabstop=2: -#}
 <h3>New Topic <span class="right updown-button">&udarr;</span></h3>
 <div>
-{% if user %}
+{% if me %}
 <form method="post" action="/s/{{ section.path }}">
   <label>
     Title:

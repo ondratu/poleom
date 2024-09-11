@@ -10,6 +10,7 @@ from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
 from .mysql import DB_CONV, DictCursor, enum2str
+from .pager import Pager
 
 # Three options of the password format
 # >= 10 chars, one lowercase letter, one uppercase letter, one number
@@ -22,7 +23,12 @@ CHECK_OPT3 = r"[\w\W]{15,}$"
 
 @dataclass
 class User:
-    """Section record model class."""
+    """Section record model class.
+
+    >>> user = User(0, "", "", None, User.State.ACTIVE)
+    >>> user.role
+    <Role.MEMBER: 'MEMBER'>
+    """
     HASH_ROUNDS = 12
     VALID_PASSWORD_REGEX = re.compile(
         f"^({CHECK_OPT1}|{CHECK_OPT2}|{CHECK_OPT3})")
@@ -45,7 +51,7 @@ class User:
     email: str
     signature: str | None
     state: State
-    role: Role
+    role: Role = Role.MEMBER
 
     @property
     def id(self):
@@ -65,6 +71,54 @@ class User:
             "state": self.state,
             "role": self.role,
         }
+
+    def check_role(self, role: Role):
+        """Return False if user has insufficient role.
+
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.MEMBER)
+        >>> user.check_role(User.Role.MEMBER)
+        True
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.MEMBER)
+        >>> user.check_role(User.Role.MODERATOR)
+        False
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.MEMBER)
+        >>> user.check_role(User.Role.ADMIN)
+        False
+        >>> user = User(0, "", "", None, User.State.ACTIVE,
+        ...             User.Role.MODERATOR)
+        >>> user.check_role(User.Role.MEMBER)
+        True
+        >>> user = User(0, "", "", None, User.State.ACTIVE,
+        ...             User.Role.MODERATOR)
+        >>> user.check_role(User.Role.MODERATOR)
+        True
+        >>> user = User(0, "", "", None, User.State.ACTIVE,
+        ...             User.Role.MODERATOR)
+        >>> user.check_role(User.Role.ADMIN)
+        False
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.ADMIN)
+        >>> user.check_role(User.Role.MEMBER)
+        True
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.ADMIN)
+        >>> user.check_role(User.Role.MODERATOR)
+        True
+        >>> user = User(0, "", "", None, User.State.ACTIVE, User.Role.ADMIN)
+        >>> user.check_role(User.Role.ADMIN)
+        True
+        """
+        if self.role == User.Role.MEMBER and role != User.Role.MEMBER:
+            return False
+        if self.role == User.Role.MODERATOR and role == User.Role.ADMIN:
+            return False
+        return True
+
+    def is_moderator(self):
+        """Return True if user is moderator or admin."""
+        return self.role != User.Role.MEMBER
+
+    def is_admin(self):
+        """Return True if user is admin."""
+        return self.role == User.Role.ADMIN
 
     @staticmethod
     def from_row(row):
@@ -137,11 +191,20 @@ class User:
                 return None  # Invalid salt means no or corupted password in DB
             return User.from_row(row)
 
-    @staticmethod
-    def delete(conn: Connection, _id: int):
-        """Delete existing user in db."""
+    def delete(self, conn: Connection):
+        """Mark user as delete and anonymize his data."""
+        self.email = f"{self.id}@invalid"
+        self.name = f"Member {self.id}"
+        self.state = User.State.DELETED
+        self.role = User.Role.MEMBER
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM users WHERE user_id=%(id)s", {"id": _id})
+            cur.execute(
+                """
+                UPDATE users SET name=%(name)s, email=%(email)s, password="",
+                    signature=NULL, terms=NOW(), state=%(state)s,
+                    role=%(role)s, data="{}"
+                WHERE user_id = %(id)s
+                """, self.to_dict())
             conn.commit()
 
     def update(self, conn: Connection, password: str | None = None):
@@ -167,10 +230,14 @@ class User:
             conn.commit()
 
     @staticmethod
-    def list(conn: Connection):
+    def list(conn: Connection, pager: Pager):
         """Get list of users from db."""
         with conn.cursor(DictCursor) as cur:
-            cur.execute("SELECT name, email, signature FROM users")
+            cur.execute(
+                """
+                SELECT * FROM users
+                LIMIT %(OFFSET)s, %(LIMIT)s
+                """, dict(pager.sql_dict()))
             for row in cur:
                 yield User.from_row(row)
 

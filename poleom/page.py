@@ -27,7 +27,7 @@ def root(req):
     except ProgrammingError as err:
         if err.args[0] == TABLE_DOESNT_EXIST_ERR:
             redirect("/wizard")
-    return render_template("index.html", user=req.user, sections=sections)
+    return render_template("index.html", me=req.user, sections=sections)
 
 
 @app.route("/terms")
@@ -37,7 +37,7 @@ def terms(_):
 
 
 @app.route("/preview", method=state.METHOD_POST)
-@auth_user
+@auth_user()
 def preview(req):
     """Check markdown and return preview."""
     source = req.form.getfirst("source", "").strip()

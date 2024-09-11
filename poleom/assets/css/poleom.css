@@ -26,6 +26,7 @@ nav > * > a, nav > * > a:visited {
   color: blue;
   top: 0;
   padding: 0 0.25em 0 0.25em;
+  white-space: nowrap;
 }
 
 .dropdown {
@@ -158,6 +159,8 @@ h4 > div > [rel=author] {
 .page-width {
   max-width: 800pt;
   margin: auto;
+  padding-left: 16pt;
+  padding-right: 16pt;
 }
 
 .page {
@@ -167,6 +170,7 @@ h4 > div > [rel=author] {
 
 a, a:visited, a:hover {
   color: blue;
+  cursor: pointer;
 }
 
 pre {
@@ -513,4 +517,33 @@ h3:has(.updown-button)+div{
 .in-replay > input {
   font-size: 10pt;
   padding: 2pt 4pt;
+}
+
+.users {
+  width: 100%;
+  border: 1px solid gray;
+  border-radius: 5pt;
+  border-spacing: 0;
+}
+.users tr {
+  line-height: 20pt;
+}
+.users tr:nth-child(odd){
+  background: #eee;
+}
+.users tr:first-child{
+  background: #dcdcdc;
+}
+.users td {
+  padding: 5pt;
+}
+.users td.action {
+  text-align: right;
+}
+.users td div {
+  display: flex;
+  align-items: center;
+}
+.users td div img {
+  padding-right: 5pt;
 }

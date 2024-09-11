@@ -6,7 +6,7 @@
       <span class="right">
       <a id="{{ post.hexdigest }}" href="#{{ post.hexdigest }}">Link</a>
       | <a replay={{ post.hexdigest }}>Reply</a>
-      {%- if user and user.id == post.user_id %}
+      {%- if me and me.id == post.user_id %}
       | <a href="/s/{{ section.path }}/{{ topic.path }}/{{ post.hexdigest}}{{edit_offset}}">Edit</a>
       {%- endif %}
     </span>
@@ -42,7 +42,7 @@
 
 <h3 id="new-post">New Post <small class="right">Re: {{ topic.title }}</small></h3>
 
-{% if user %}
+{% if me %}
 <form method="post" enctype="multipart/form-data" action="#new-post">
   <label class="{{ "error" if "body" in errors }}" for="post-editor">Post:</label>
   <div class="right in-replay">
