@@ -4,7 +4,7 @@ from poorwsgi import redirect, state
 from poorwsgi.response import JSONResponse
 
 from .lib.auth import auth_user, check_login_cookie
-from .lib.core import app
+from .lib.core import Request, app
 from .lib.pager import Pager
 from .lib.section import Section
 from .lib.topic import Topic
@@ -15,10 +15,15 @@ TABLE_DOESNT_EXIST_ERR = 1146
 
 @app.route("/")
 @check_login_cookie
-def root(req):
+def root(req: Request):
     """Root / page"""
     try:
-        sections = list(Section.list(req.db))
+        user_id: int | None = -1
+        if req.user:
+            # Admin see all sections
+            user_id = None if req.user.is_admin() else req.user.id
+
+        sections = list(Section.list(req.db, user_id))
 
         pager = Pager()
         pager.limit = 3
@@ -27,6 +32,7 @@ def root(req):
     except ProgrammingError as err:
         if err.args[0] == TABLE_DOESNT_EXIST_ERR:
             redirect("/wizard")
+        raise
     return render_template("index.html", me=req.user, sections=sections)
 
 

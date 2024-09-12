@@ -16,7 +16,7 @@ from .topic import ITEMS_ON_PAGE, find_topic, topic_page
 @auth_user()
 def create_post(req, section_path: str, topic_path: str):
     """Create post in topic."""
-    section, topic = find_topic(req.db, section_path, topic_path)
+    section, topic = find_topic(req.db, section_path, topic_path, req.user)
 
     parent = req.form.get("parent", "").strip() or None
     body = req.form.get("body", "").strip()
@@ -62,7 +62,7 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
 
     attachments = list(Attachment.list(req.db, post.id))
 
-    section, topic = find_topic(req.db, section_path, topic_path)
+    section, topic = find_topic(req.db, section_path, topic_path, req.user)
     return render_template("post_form.html",
                            me=req.user,
                            section=section,
@@ -86,7 +86,7 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
     offset = f"?offset={offset}" if offset else ""
 
     post.body = req.form.get("body", "").strip()
-    section, topic = find_topic(req.db, section_path, topic_path)
+    section, topic = find_topic(req.db, section_path, topic_path, req.user)
 
     for field in req.form["attachments"]:
         if field.filename:

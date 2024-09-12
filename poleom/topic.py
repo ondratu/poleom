@@ -20,10 +20,11 @@ from .lib.view import render_template
 ITEMS_ON_PAGE = 10
 
 
-def find_topic(db: Connection, section_path: str, topic_path: str):
+def find_topic(db: Connection, section_path: str, topic_path: str,
+               user: User | None):
     """Find topic in section on raise 404 HTTPException."""
     section = Section.find(db, section_path)
-    if not section:
+    if not section or not section.has_access(db, user):
         abort(404)
     topic = Topic.find(db, section.id, topic_path)
     if not topic:
@@ -58,7 +59,12 @@ def create_topic(req, section_path: str):
     """Create new topic."""
     section = Section.find(req.db, section_path)
     if not section:
-        abort(404)
+        abort(state.HTTP_NOT_FOUND)
+    if section.state == Section.State.ARCHIVED:
+        abort(state.HTTP_GONE)
+    # Only moderator can create topic in Locked section
+    if section.state == Section.State.LOCKED and not req.user.is_moderator():
+        abort(state.HTTP_FORBIDDEN)
 
     title = req.form.get("title", "").strip()
     body = req.form.get("body", "").strip()
@@ -83,7 +89,7 @@ def create_topic(req, section_path: str):
 @check_login_cookie
 def topic_detail(req, section_path: str, topic_path: str):
     """Return section detail."""
-    section, topic = find_topic(req.db, section_path, topic_path)
+    section, topic = find_topic(req.db, section_path, topic_path, req.user)
     posts, pager, etag = topic_page(req, topic.id, check=True)
 
     return Response(render_template("topic.html",

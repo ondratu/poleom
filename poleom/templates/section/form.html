@@ -1,0 +1,72 @@
+{# vim:set softtabstop=2: -#}
+{% include("_header.html") %}
+
+{% if section.id %}
+<h2>Edit Section</h2>
+{% else %}
+<h2>New Section</h2>
+{% endif %}
+<div>
+
+  <form method="post" action="/sections{{ "/"+section.id|string if section.id else "" }}">
+    <label class="{{ "error" if "title" in errors }}">
+      Title:
+      <input name="title" placeholder="Section Title" maxlength="255"
+             size="80" value="{{ section.title }}"/>
+    </label>
+    {% if "title" in errors %}
+    <div class="error">{{ errors.title.value }}</div>
+    {% endif -%}
+    <br/>
+
+    <label class="{{ "error" if "path" in errors }}">
+      URL Path:
+      <input name="pah" placeholder="generated_from_title" maxlength="255"
+             size="80" readonly="readonly" value="{{ section.path }}"/>
+    </label>
+    {% if "path" in errors %}
+    <div class="error">{{ errors.path.value }}</div>
+    {% endif -%}
+
+    <br/>
+    <label for="section-editor">Description:</label><br/>
+    <textarea id="section-editor" name="description" placeholder="Section Descripion"
+              cols="80" class="{{ "error" if "description" in errors else "" }}"
+              rows="5">{{ section.description }}</textarea>
+    <br/>
+    {% if "description" in errors %}
+    <div class="error">{{ errors.description.value }}</div>
+    {% endif -%}
+
+    <label>Private:
+      <input type="checkbox"
+             name="private" {{ 'checked="checked"' if section.private else "" }}></label>
+    <br/>
+    State:
+    <label class="{{ "error" if "title" in errors }}">Open:
+      <input type="radio" name="state" value="OPEN"
+            {{ 'checked="checked"' if section.state.value == "OPEN" else "" }}></label>
+    <label>Locked:
+      <input type="radio" name="state" value="LOCKED"
+           {{ 'checked="checked"' if section.state.value == "LOCKED" else "" }}></label>
+    <label>Archived:
+      <input type="radio" name="state" value="ARCHIVED"
+          {{ 'checked="checked"' if section.state.value == "ARCHIVED" else "" }} ></label>
+    <br/>
+    {% if "state" in errors %}
+    <div class="error">{{ errors.state.value }}</div>
+    {% endif -%}
+
+    <input value="{{ "Update" if section.id else "Create" }}" type="submit">
+    <a class="right" href="/sections">Cancel</a>
+  </form>
+
+  <script>
+    $(document).ready(function() {
+      let section_editor = new DocutilsEditor('#section-editor');
+    });
+  </script>
+
+</div>
+
+  {% include("_footer.html") %}

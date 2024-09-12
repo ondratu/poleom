@@ -32,10 +32,13 @@
             <a href="/user/profile">Profile</a>
             <a href="/user/account">Settings</a>
             <hr/>
+          {%- if me.is_moderator() %}
+            <a href="/sections">Sections</a>
           {%- if me.is_admin() %}
             <a href="/users">Users</a>
-            <hr/>
           {%- endif %}
+            <hr/>
+          {%- endif %}{# // is_moderator #}
             <a href="/logout">Log out</a>
           </div>
         </div>

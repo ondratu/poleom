@@ -1,0 +1,59 @@
+{# vim:set softtabstop=2: -#}
+{% include("_header.html") %}
+
+    <h2>Sections <a class="right button" href="/sections/new">New Section</a></h2>
+    <table class="users">
+      <tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>State</th>
+        <th>Private</th>
+        <th>Order</th>
+        <th>Action</th>
+      </tr>
+      {% for section in sections %}
+      <tr>
+        <td>{{ section.id }}</td>
+        <td><div>
+          <a href="/s/{{ section.path }}" data="title">{{ section.title }}</a>
+          </div></td>
+        <td>{{ section.state.value }}</td>
+        <td>{{ "Private" if section.private else "Public" }}</td>
+        <td>
+          <a up="{{ section.id }}" title="Higher">&#x25B2;</a>
+          <a down="{{ section.id }}" title="Lower">&#x25BC;</a>
+        </td>
+        <td class="action">
+          {%- if section.state.value != "ARCHIVED" %}
+            <a cmd="archive" section-id="{{ section.id }}">Archive</a> |
+            {% if section.private %}
+            <a public="{{ section.id }}">Public</a> |
+            {% else %}
+            <a private="{{ section.id }}">Private</a> |
+            {% endif %}
+          {% endif %}
+          {% if section.state.value != "LOCKED" %}
+            <a cmd="lock" section-id="{{ section.id }}">Lock</a> |
+          {% endif %}
+          {% if section.state.value != "OPEN" %}
+            <a cmd="open" section-id="{{ section.id }}">Open</a> |
+          {% endif %}
+            <a href="/sections/{{ section.id }}">Edit</a>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="6">{{ section.description|md2rst|rst2html }}</td>
+      </tr>
+    {% endfor %}
+    </table>
+
+  {% include("_pager.html") %}
+
+  <script src="/js/sections.js"></script>
+  <script>
+    $(document).ready(function() {
+    let sections = new Sections();
+  });
+  </script>
+
+  {% include("_footer.html") %}

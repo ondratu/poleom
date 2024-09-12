@@ -1,7 +1,8 @@
 {# vim:set softtabstop=2: -#}
+{% if me %}
 <h3>New Topic <span class="right updown-button">&udarr;</span></h3>
 <div>
-{% if me %}
+{% if section.state.value == "OPEN" or me.is_moderator() %}
 <form method="post" action="/s/{{ section.path }}">
   <label>
     Title:
@@ -22,9 +23,10 @@
 </script>
 
 {% else %}
-<p>You have to be log in...</p>
+<p>Section is locked.</p>
 {% endif %}
 </div>
+{% endif %}{# // endof if me #}
 
 {% for topic in topics %}
 <a href="/s/{{ section.path }}/{{ topic.path }}">

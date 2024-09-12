@@ -41,7 +41,7 @@ def login(req):
         uri = parse.urlparse(req.referer)
         return render_template("user/login.html",
                                email=email,
-                               redirect_url=req.referer,
+                               redirect_url=redirect_url,
                                error=True)
 
     session = create_login_cookie(user.id)
@@ -56,7 +56,7 @@ def login(req):
 def logout(req):
     """Create login cookie."""
     session = destroy_login_cookie(req.cookies)
-    res = RedirectResponse(req.referer)
+    res = RedirectResponse("/")
     session.header(res)
     return res
 
@@ -295,6 +295,8 @@ def post_change_request(req, hexdigest: str):
         return res
 
     return Response(status_code=state.HTTP_BAD_REQUEST)
+
+# User administration
 
 
 @app.route("/users")

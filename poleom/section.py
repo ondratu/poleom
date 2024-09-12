@@ -1,36 +1,27 @@
-"""Endpoints for sections."""
-from urllib import parse
+"""Endpoints for sections.
+
+TODO:
+    - přidávání uživatelů (hledání) do sekcí
+        - seznam uživatelů v detailu privátní sekce
+        - seznam privátní sekcí v profilu uživatele (když se kouká vlastník)
+"""
+import logging
 
 from poorwsgi import state
-from poorwsgi.response import Response, abort, redirect
+from poorwsgi.response import JSONResponse, Response, abort
 
+from . import __name__ as appname
 from .lib.auth import auth_user, check_login_cookie
-from .lib.core import app
-from .lib.exceptions import DuplicityError
+from .lib.core import Request, app
+from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
 from .lib.response import check_etag, create_etag
 from .lib.section import Section
 from .lib.topic import Topic
+from .lib.user import User
 from .lib.view import render_template
 
-
-@app.route("/s", method=state.METHOD_POST)
-@auth_user()
-def create_section(req):
-    """Create new section."""
-    title = req.form.get("title").strip()
-    description = req.form.get("description").strip()
-    if not title:
-        uri = parse.urlparse(req.referer)
-        redirect(uri._replace(fragment="empty_section_title").geturl())
-
-    try:
-        section = Section.create(req.db, title, description)
-    except DuplicityError:
-        uri = parse.urlparse(req.referer)
-        redirect(uri._replace(fragment="duplicity_section_title").geturl())
-
-    redirect(f"/s/{section.path}")
+log = logging.getLogger(appname)
 
 
 @app.route("/s/<path>")
@@ -38,7 +29,7 @@ def create_section(req):
 def section_detail(req, path: str):
     """Return section detail."""
     section = Section.find(req.db, path)
-    if not section:
+    if not section.has_access(req.db, req.user):
         abort(404)
 
     pager = Pager(limit=20)
@@ -57,3 +48,129 @@ def section_detail(req, path: str):
                                     topics=topics,
                                     pager=pager),
                     headers={"ETag": etag})
+
+# Section administration
+
+
+def bind_section(section_id: int, form):
+    """Bind Form to Session."""
+    title = form.get("title", "").strip()
+    description = form.get("description", "").strip()
+    private = "private" in form
+    state_ = form.get("state", "").strip()
+
+    errors = {}
+    if not title:
+        errors["title"] = FormError.MISSING
+    if not description:
+        errors["description"] = FormError.MISSING
+    if not state_:
+        errors["state"] = FormError.MISSING
+    try:
+        state_ = Section.State(state_)
+    except ValueError:
+        state_ = Section.State.OPEN
+        errors["state"] = FormError.INVALID
+
+    section = Section(section_id, title, description, state_, private)
+    if not section.path:
+        errors["path"] = FormError.INVALID
+
+    return section, errors
+
+
+@app.route("/sections")
+@auth_user(User.Role.MODERATOR)
+def section_list(req):
+    """Return list of sections for administration."""
+    pager = Pager()
+    pager.bind(req.args)
+
+    # Admin see all sections
+    user_id = None if req.user.is_admin() else req.user.id
+    sections = Section.list(req.db, user_id)
+    return render_template("section/list.html", me=req.user,
+                           sections=sections, pager=pager)
+
+
+@app.route("/sections/<section_id:int>", method=state.METHOD_PATCH)
+@auth_user(role=User.Role.MODERATOR)  # only moderator can do that
+def section_patch(req: Request, section_id: int):
+    """Update user role."""
+    if state_ := req.json.get("state", "").upper():
+        try:
+            state_ = Section.State(state_)
+        except ValueError as err:
+            log.warning("state: %s (%s)", err, state_)
+            abort(state.HTTP_BAD_REQUEST)
+    if weight := req.json.get("weight", 0):
+        try:
+            weight = 1 if weight > 0 else -1
+        except TypeError as err:
+            log.warning("weight: %s (%s)", err, weight)
+            abort(state.HTTP_BAD_REQUEST)
+    if (private := req.json.get("private")) is not None:
+        private = bool(private)
+
+    section = Section.get(req.db, section_id)
+    if not section:
+        abort(state.HTTP_NOT_FOUND)
+
+    if state_:
+        section.state = state_
+    if private is not None:
+        section.private = private
+
+    section.update(req.db)
+
+    if weight:
+        section.swap(req.db, weight)
+
+    json = section.to_dict()
+    json["state"] = section.state.value
+    return JSONResponse({"section": json})
+
+
+@app.route("/sections/new")
+@app.route("/sections/<section_id:int>")
+@auth_user(role=User.Role.MODERATOR)
+def section_edit(req, section_id: int = 0):
+    """Return section detail."""
+    if section_id:
+        section = Section.get(req.db, section_id)
+        if not section or not section.has_access(req.db, req.user):
+            abort(state.HTTP_NOT_FOUND)
+    else:
+        section = Section(0, "", "", Section.State.OPEN, False)
+
+    return render_template("section/form.html",
+                           me=req.user,
+                           section=section)
+
+
+@app.route("/sections", method=state.METHOD_POST)
+@app.route("/sections/<section_id:int>", method=state.METHOD_POST)
+@auth_user(role=User.Role.MODERATOR)
+def section_update(req, section_id: int = 0):
+    """Update or Create section"""
+    if section_id:
+        section = Section.get(req.db, section_id)
+        if not section or not section.has_access(req.db, req.user):
+            abort(state.HTTP_NOT_FOUND)
+
+    section, errors = bind_section(section_id, req.form)
+
+    if not errors:
+        try:
+            if section.id:
+                section.update(req.db)
+            else:
+                section.create(req.db)
+        except DuplicityError:
+            errors["title"] = FormError.DUPLICITY
+            errors["path"] = FormError.DUPLICITY
+
+    return render_template("section/form.html",
+                           me=req.user,
+                           section=section,
+                           errors=errors)

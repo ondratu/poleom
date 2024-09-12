@@ -34,11 +34,22 @@ CREATE TABLE sections (
     path VARCHAR(255) NOT NULL,
     description VARCHAR(255) DEFAULT NULL,
     state ENUM("OPEN", "LOCKED", "ARCHIVED") NOT NULL DEFAULT "OPEN",
-    weight INT NOT NULL DEFAULT 0,
+    weight INT NOT NULL,
     private BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (section_id),
     UNIQUE KEY path_uk (path)
+) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE sections_users (
+    section_id INT NOT NULL,
+    user_id INT NOT NULL,
+
+    UNIQUE KEY section_id_user_id_uk (section_id, user_id),
+    FOREIGN KEY sections_users_section_id_fk (section_id)
+        REFERENCES sections(section_id) ON DELETE CASCADE,
+    FOREIGN KEY sections_users_user_id_fk (user_id)
+        REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE topics (
@@ -99,10 +110,10 @@ CREATE TABLE attachments (
 INSERT INTO users (name, email, password, state, role)
     VALUES ("Admin", "root@localhost", "", "ACTIVE", "ADMIN");
 
-INSERT INTO sections (title, path, description, state) VALUES
-    ("Announcements", "announcements", "Updates from maintainers", "LOCKED");
-INSERT INTO sections (title, path, description) VALUES
-    ("General", "general", "Chat about anything and everything here"),
-    ("Ideas", "ideas", "Share ideas for new features"),
-    ("Q&A", "q-a", "Ask the community for help"),
-    ("Show and tell", "show-and-tell", "Show off something you've made");
+INSERT INTO sections (title, path, description, state, weight) VALUES
+    ("Announcements", "announcements", "Updates from maintainers", "LOCKED", 1);
+INSERT INTO sections (title, path, description, weight) VALUES
+    ("General", "general", "Chat about anything and everything here", 2),
+    ("Ideas", "ideas", "Share ideas for new features", 3),
+    ("Q&A", "q-a", "Ask the community for help", 4),
+    ("Show and tell", "show-and-tell", "Show off something you've made", 5);
