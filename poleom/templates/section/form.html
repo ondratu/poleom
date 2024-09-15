@@ -29,7 +29,15 @@
     {% endif -%}
 
     <br/>
-    <label for="section-editor">Description:</label><br/>
+    <label for="section-editor">Description:</label>
+    <label class="right">Language:
+      <select name="lang">
+      {% for item in languages %}
+        <option value="{{ item.lang }}" {{ 'selected="selected"' if section.lang == item.lang else "" }}>{{ item.language }}</option>
+      {% endfor %}
+      </select>
+    </label>
+    <br/>
     <textarea id="section-editor" name="description" placeholder="Section Descripion"
               cols="80" class="{{ "error" if "description" in errors else "" }}"
               rows="5">{{ section.description }}</textarea>
@@ -57,6 +65,7 @@
     <div class="error">{{ errors.state.value }}</div>
     {% endif -%}
 
+    {%- if section.id %}
     <div id="users">
       <label class="right">Search:
         <input name="search" placeholder="User Name" autocomplete="off"></label>
@@ -64,6 +73,7 @@
       <div class="left p50 list-box"></div>
       <div class="right p50 search-box"></div>
     </div>
+    {%- endif %}
 
     <div class="clear">
       <input value="{{ "Update" if section.id else "Create" }}" type="submit">
@@ -75,7 +85,9 @@
   <script>
     $(document).ready(function() {
       let section_editor = new DocutilsEditor('#section-editor');
+      {%- if section.id %}
       let section_users = new SectionUsers('#users', {{ section.id }});
+      {%- endif %}
     });
   </script>
 

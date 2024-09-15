@@ -5,8 +5,8 @@ from enum import Enum
 from hashlib import sha3_512
 
 import bcrypt
-from MySQLdb import IntegrityError  # type: ignore[import-untyped]
-from MySQLdb.connections import Connection  # type: ignore[import-untyped]
+from MySQLdb import IntegrityError
+from MySQLdb.connections import Connection
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
 from .mysql import DB_CONV, DictCursor, enum2str

@@ -1,7 +1,14 @@
 {# vim:set softtabstop=2: -#}
 {% include("_header.html") %}
 
-    <h2>Sections <a class="right button" href="/sections/new">New Section</a></h2>
+    <h2>Sections
+      <a class="right button" href="/sections/new?lang={{ lang }}">New Section</a>
+      <select class="right button" name="lang">
+      {% for item in languages %}
+        <option value="{{ item.lang }}" {{ 'selected="selected"' if lang == item.lang else "" }}>{{ item.language }}</option>
+      {% endfor %}
+      </select>
+    </h2>
     <table class="users">
       <tr>
         <th>#</th>
@@ -15,7 +22,7 @@
       <tr>
         <td>{{ section.id }}</td>
         <td><div>
-          <a href="/s/{{ section.path }}" data="title">{{ section.title }}</a>
+          <a href="/{{ section.lang }}/{{ section.path }}" data="title">{{ section.title }}</a>
           </div></td>
         <td>{{ section.state.value }}</td>
         <td>{{ "Private" if section.private else "Public" }}</td>
@@ -53,6 +60,9 @@
   <script>
     $(document).ready(function() {
     let sections = new Sections();
+    $('select[name=lang]').on('change', function(ev){
+        location.search = "lang="+$(ev.target).val();
+    });
   });
   </script>
 

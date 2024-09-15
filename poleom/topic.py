@@ -20,10 +20,10 @@ from .lib.view import render_template
 ITEMS_ON_PAGE = 10
 
 
-def find_topic(db: Connection, section_path: str, topic_path: str,
+def find_topic(db: Connection, lang: str, section_path: str, topic_path: str,
                user: User | None):
     """Find topic in section on raise 404 HTTPException."""
-    section = Section.find(db, section_path)
+    section = Section.find(db, lang, section_path)
     if not section or not section.has_access(db, user):
         abort(404)
     topic = Topic.find(db, section.id, topic_path)
@@ -53,11 +53,11 @@ def topic_page(req, topic_id: int, check: bool = False):
     return posts, pager, etag
 
 
-@app.route("/s/<section_path>", method=state.METHOD_POST)
+@app.route("/<lang:lang>/<section_path>", method=state.METHOD_POST)
 @auth_user()
-def create_topic(req, section_path: str):
+def create_topic(req, lang: str, section_path: str):
     """Create new topic."""
-    section = Section.find(req.db, section_path)
+    section = Section.find(req.db, lang, section_path)
     if not section:
         abort(state.HTTP_NOT_FOUND)
     if section.state == Section.State.ARCHIVED:
@@ -82,14 +82,15 @@ def create_topic(req, section_path: str):
         uri = parse.urlparse(req.referer)
         redirect(uri._replace(fragment="duplicity_topic_title").geturl())
 
-    redirect(f"/s/{section_path}/{topic.path}")
+    redirect(f"/{lang}/{section_path}/{topic.path}")
 
 
-@app.route("/s/<section_path>/<topic_path>")
+@app.route("/<lang:lang>/<section_path>/<topic_path>")
 @check_login_cookie
-def topic_detail(req, section_path: str, topic_path: str):
+def topic_detail(req, lang: str, section_path: str, topic_path: str):
     """Return section detail."""
-    section, topic = find_topic(req.db, section_path, topic_path, req.user)
+    section, topic = find_topic(req.db, lang, section_path, topic_path,
+                                req.user)
     posts, pager, etag = topic_page(req, topic.id, check=True)
 
     return Response(render_template("topic.html",

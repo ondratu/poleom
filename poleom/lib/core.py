@@ -26,6 +26,7 @@ HANDLER.setFormatter(logging.Formatter(LOG_FORMAT))
 class Request(request.Request):
     """Own Request for typechecking."""
     __db: Connection
+    __lang: str
 
     @property
     def db(self):
@@ -35,6 +36,15 @@ class Request(request.Request):
     @db.setter
     def db(self, value):
         self.__db = value
+
+    @property
+    def lang(self):
+        """Selected language"""
+        return self.__lang
+
+    @lang.setter
+    def lang(self, value: str):
+        self.__lang = value
 
 
 class App(Application):
@@ -55,6 +65,7 @@ class App(Application):
         logging.getLogger(appname).setLevel(log_level)
 
         self.title = options.get("title", "Poleom")
+        self.default_lang = options.get("default_lang", "en")
 
         # Data Source Name regular expression for mysql connection
         re_dsn = re.compile(
@@ -100,6 +111,7 @@ class App(Application):
 
 
 app = App()
+app.set_filter("lang", r"[a-z]{2,3}", str)
 app.document_root = path.join(str(files("poleom")), "assets")
 
 

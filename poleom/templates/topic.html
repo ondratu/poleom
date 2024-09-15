@@ -3,7 +3,8 @@
 
 <ul class="breadcrumb">
   <li><a href="/">{{ title }}</a></li>
-  <li><a href="/s/{{ section.path }}">{{ section.title }}</a></li>
+  <li><a href="/{{ section.lang }}">{{ section.lang }}</a></li>
+  <li><a href="/{{ section.lang }}/{{ section.path }}">{{ section.title }}</a></li>
   <li class="active">{{ topic.title }}</li>
 </ul>
 

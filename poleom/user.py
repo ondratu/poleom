@@ -235,7 +235,7 @@ def reset_password_request(req: Request):
     return render_template("user/reset-password-request.html", sent=True)
 
 
-@app.route("/chr/<hexdigest:hex>")
+@app.route("/c/<hexdigest:hex>")
 def accept_change_request(req: Request, hexdigest: str):
     """Accept change request / change request form."""
     change_request = ChangeRequest.get(req.db, hexdigest)
@@ -266,7 +266,7 @@ def accept_change_request(req: Request, hexdigest: str):
     return Response(status_code=state.HTTP_BAD_REQUEST)
 
 
-@app.route("/chr/<hexdigest:hex>", method=state.METHOD_POST)
+@app.route("/c/<hexdigest:hex>", method=state.METHOD_POST)
 def post_change_request(req, hexdigest: str):
     """Accept change request."""
     change_request = ChangeRequest.get(req.db, hexdigest)
@@ -288,7 +288,7 @@ def post_change_request(req, hexdigest: str):
             errors["password_again"] = FormError.MISMATCH
 
         if errors:
-            return render_template("user/reset_password.html",
+            return render_template("user/reset-password-request.html",
                                    change_request=change_request,
                                    errors=errors)
 

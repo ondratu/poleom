@@ -2,7 +2,7 @@
 <h2>Sections</h2>
 
 {% for section in sections %}
-<a href="/s/{{section.path}}">
+<a href="/{{ section.lang }}/{{section.path}}">
   <h3 class="section">
     {{ section.title }}
     <small class="right">Topics: {{ section.count }}</small>
@@ -10,7 +10,7 @@
   <p>{{ section.description|md2rst|rst2html }}</p>
 
   {% for topic in section.topics %}
-  <a href="/s/{{ section.path }}/{{ topic.path }}">
+  <a href="/{{ section.lang }}/{{ section.path }}/{{ topic.path }}">
   <h4 class="topic">
     {{topic.title }}
     <div class="right">

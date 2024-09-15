@@ -12,11 +12,13 @@ from .lib.view import render_template
 from .topic import ITEMS_ON_PAGE, find_topic, topic_page
 
 
-@app.route("/s/<section_path>/<topic_path>", method=state.METHOD_POST)
+@app.route("/<lang:lang>/<section_path>/<topic_path>",
+           method=state.METHOD_POST)
 @auth_user()
-def create_post(req, section_path: str, topic_path: str):
+def create_post(req, lang: str, section_path: str, topic_path: str):
     """Create post in topic."""
-    section, topic = find_topic(req.db, section_path, topic_path, req.user)
+    section, topic = find_topic(req.db, lang, section_path, topic_path,
+                                req.user)
 
     parent = req.form.get("parent", "").strip() or None
     body = req.form.get("body", "").strip()
@@ -45,14 +47,15 @@ def create_post(req, section_path: str, topic_path: str):
             Attachment.create(req.db, post.id, file)
 
     pager.total = Post.count(req.db, topic.id)
-    return RedirectResponse(
-        f"/s/{section_path}/{topic_path}?offset={pager.last}#{post.hexdigest}")
+    return RedirectResponse(f"/{lang}/{section_path}/{topic_path}"
+                            f"?offset={pager.last}#{post.hexdigest}")
 
 
-@app.route("/s/<section_path>/<topic_path>/<hexdigest>",
+@app.route("/<lang:lang>/<section_path>/<topic_path>/<hexdigest>",
            method=state.METHOD_GET)
 @auth_user()
-def form_post(req, section_path: str, topic_path: str, hexdigest: str):
+def form_post(req, lang: str, section_path: str, topic_path: str,
+              hexdigest: str):
     """Create post in topic."""
     post = Post.find(req.db, hexdigest)
     if not post:
@@ -62,7 +65,8 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
 
     attachments = list(Attachment.list(req.db, post.id))
 
-    section, topic = find_topic(req.db, section_path, topic_path, req.user)
+    section, topic = find_topic(req.db, lang, section_path, topic_path,
+                                req.user)
     return render_template("post_form.html",
                            me=req.user,
                            section=section,
@@ -71,10 +75,11 @@ def form_post(req, section_path: str, topic_path: str, hexdigest: str):
                            attachments=attachments)
 
 
-@app.route("/s/<section_path>/<topic_path>/<hexdigest>",
+@app.route("/<lang:lang>/<section_path>/<topic_path>/<hexdigest>",
            method=state.METHOD_POST)
 @auth_user()
-def update_post(req, section_path: str, topic_path: str, hexdigest: str):
+def update_post(req, lang: str, section_path: str, topic_path: str,
+                hexdigest: str):
     """Update post."""
     post = Post.find(req.db, hexdigest)
     if not post:
@@ -86,7 +91,8 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
     offset = f"?offset={offset}" if offset else ""
 
     post.body = req.form.get("body", "").strip()
-    section, topic = find_topic(req.db, section_path, topic_path, req.user)
+    section, topic = find_topic(req.db, lang, section_path, topic_path,
+                                req.user)
 
     for field in req.form["attachments"]:
         if field.filename:
@@ -108,7 +114,7 @@ def update_post(req, section_path: str, topic_path: str, hexdigest: str):
 
     post.update(req.db)
     return RedirectResponse(
-        f"/s/{section_path}/{topic_path}{offset}#{hexdigest}")
+        f"/{lang}/{section_path}/{topic_path}{offset}#{hexdigest}")
 
 
 @app.route("/p/<hexdigest:hex>")
@@ -121,5 +127,6 @@ def get_post(req: Request, hexdigest: str):
 
     post_dict = post.to_dict()
     post_dict["created"] = int(post_dict["created"].timestamp())
-    post_dict["modified"] = int(post_dict["modified"].timestamp())
+    if post.modified:
+        post_dict["modified"] = int(post_dict["modified"].timestamp())
     return JSONResponse(post=post_dict)

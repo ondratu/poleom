@@ -7,7 +7,7 @@
       <a id="{{ post.hexdigest }}" href="#{{ post.hexdigest }}">Link</a>
       | <a replay={{ post.hexdigest }}>Reply</a>
       {%- if me and me.id == post.user_id %}
-      | <a href="/s/{{ section.path }}/{{ topic.path }}/{{ post.hexdigest}}{{edit_offset}}">Edit</a>
+      | <a href="/{{ section.lang }}/{{ section.path }}/{{ topic.path }}/{{ post.hexdigest}}{{edit_offset}}">Edit</a>
       {%- endif %}
     </span>
   </div>

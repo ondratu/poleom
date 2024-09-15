@@ -3,7 +3,7 @@
 <h3>New Topic <span class="right updown-button">&udarr;</span></h3>
 <div>
 {% if section.state.value == "OPEN" or me.is_moderator() %}
-<form method="post" action="/s/{{ section.path }}">
+<form method="post" action="/{{ section.lang }}/{{ section.path }}">
   <label>
     Title:
     <input name="title" placeholder="Topic Title" maxlength="255" size="80"/>
@@ -29,7 +29,7 @@
 {% endif %}{# // endof if me #}
 
 {% for topic in topics %}
-<a href="/s/{{ section.path }}/{{ topic.path }}">
+<a href="/{{ section.lang }}/{{ section.path }}/{{ topic.path }}">
   <h3 class="topic">
     {{topic.title }}
     <div class="right">

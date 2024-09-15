@@ -448,6 +448,9 @@ h3:has(.updown-button)+div{
   padding: 2pt 8pt;
   width: calc(100% - 150px);
 }
+.post .body img {
+  max-width: 100%;
+}
 .post .signature {
   font-size: 90%;
   padding: 2pt 0pt;

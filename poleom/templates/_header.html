@@ -25,6 +25,16 @@
     <nav>
       <div class="page-width">
         <h1 class="title"><a href="/">{{ title }}</a></h1>
+      {% if languages %}
+        <div class="dropdown">
+          <a>Language</a>{# get from path #}
+          <div class="menu" data="language">
+          {% for lang in languages %}
+            <a href="/{{ lang.lang }}/">{{ lang.language }}</a>
+          {% endfor %}
+          </div>
+        </div>
+      {% endif %}
       {%- if me %}
         <div class="dropdown">
           <a>{{ me.name }}</a>

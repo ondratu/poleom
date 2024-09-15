@@ -1,39 +1,39 @@
 """Core page output."""
-from MySQLdb import ProgrammingError  # type: ignore[import-untyped]
+from operator import itemgetter
+
 from poorwsgi import redirect, state
 from poorwsgi.response import JSONResponse, TextResponse
 
-from .lib.auth import auth_user, check_login_cookie
+from .lib.auth import auth_user
 from .lib.core import Request, app
-from .lib.pager import Pager
-from .lib.section import Section
-from .lib.topic import Topic
+from .lib.settings import Language
 from .lib.view import md2rst, parse_system_messages, render_template, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
 
 
 @app.route("/")
-@check_login_cookie
 def root(req: Request):
     """Root / page"""
-    try:
-        user_id: int | None = -1
-        if req.user:
-            # Admin see all sections
-            user_id = None if req.user.is_admin() else req.user.id
+    language = app.default_lang
+    languages = Language.list(req.db)
 
-        sections = list(Section.list(req.db, user_id))
+    langs = [lang.lang for lang in languages]
+    if "Accept-Language" in req.headers:
+        accept_language = sorted(req.accept_language, key=itemgetter(1),
+                                 reverse=True)
+        for lang, _ in accept_language:
+            if lang in langs:
+                language = lang
+                break
 
-        pager = Pager()
-        pager.limit = 3
-        for section in sections:
-            section.topics = Topic.list(req.db, pager, section.id)
-    except ProgrammingError as err:
-        if err.args[0] == TABLE_DOESNT_EXIST_ERR:
-            redirect("/wizard")
-        raise
-    return render_template("index.html", me=req.user, sections=sections)
+    redirect(f"/{language}/")
+
+
+@app.route("/<lang:lang>")
+def lang_redirect(_, lang: str):
+    """Redirect lang to right url"""
+    redirect(f"/{lang}/")
 
 
 @app.route("/terms")

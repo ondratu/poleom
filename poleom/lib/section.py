@@ -26,6 +26,7 @@ class Section:
 
     _id: int
     title: str
+    lang: str
     description: str
     state: State = State.OPEN
     private: bool = False
@@ -40,9 +41,9 @@ class Section:
     @staticmethod
     def from_row(row):
         """Return section entity from DB row."""
-        return Section(row["section_id"], row["title"], row["description"],
-                       Section.State(row["state"]), row["private"],
-                       row["path"], row["weight"])
+        return Section(row["section_id"], row["title"], row["lang"],
+                       row["description"], Section.State(row["state"]),
+                       row["private"], row["path"], row["weight"])
 
     @property
     def id(self):
@@ -57,6 +58,7 @@ class Section:
         return {
             "id": self._id,
             "title": self.title,
+            "lang": self.lang,
             "path": self.path,
             "description": self.description,
             "state": self.state,
@@ -80,9 +82,10 @@ class Section:
                 cur.execute(
                     """
                     INSERT INTO sections
-                        (title, path, description, state, private, weight)
-                    VALUES (%(title)s, %(path)s, %(description)s, %(state)s,
-                            %(private)s, 0)
+                        (title, lang, path, description, state, private,
+                         weight)
+                    VALUES (%(title)s, %(lang)s, %(path)s, %(description)s,
+                            %(state)s, %(private)s, 0)
                     """, self.to_dict())
                 self._id = cur.lastrowid  # pylint: disable=protected-access
                 cur.execute("""
@@ -106,13 +109,13 @@ class Section:
             return Section.from_row(row)
 
     @staticmethod
-    def find(conn: Connection, path: str):
+    def find(conn: Connection, lang: str, path: str):
         """Found item by title."""
         with conn.cursor(DictCursor) as cur:
             cur.execute(
                 """
-                SELECT * FROM sections WHERE path=%(path)s
-                """, {"path": path})
+                SELECT * FROM sections WHERE lang=%(lang)s AND path=%(path)s
+                """, {"lang": lang, "path": path})
             row = cur.fetchone()
             if not row:
                 return None
@@ -127,7 +130,7 @@ class Section:
 
     def update(self, conn: Connection):
         """Update existing section in db."""
-        cols = ["title", "description", "path", "state", "private"]
+        cols = ["title", "lang", "description", "path", "state", "private"]
         vals = self.to_dict()
 
         sql = ",".join(f"{col}=%({col})s" for col in cols)
@@ -174,7 +177,7 @@ class Section:
         return True
 
     @staticmethod
-    def list(conn: Connection, user_id: int | None = 0):
+    def list(conn: Connection, lang: str, user_id: int | None = 0):
         """Get list of sections from db."""
         cond = ""
         if user_id:
@@ -185,7 +188,8 @@ class Section:
                 ( SELECT
                     S.*, count(T.section_id), NULL AS count FROM sections AS S
                   LEFT JOIN topics AS T ON (T.section_id = S.section_id)
-                    WHERE S.private = 0 GROUP BY S.section_id )
+                    WHERE S.lang=%(lang)s AND S.private = 0
+                    GROUP BY S.section_id )
                 UNION
                 ( SELECT
                     S.*, count(T.section_id) AS count, SU.user_id
@@ -193,9 +197,9 @@ class Section:
                   LEFT JOIN topics AS T ON (T.section_id = S.section_id)
                   LEFT JOIN sections_users SU ON (SU.section_id = S.section_id)
                     GROUP BY S.section_id
-                    HAVING S.private = 1 {cond} )
+                    HAVING S.private = 1 AND S.lang = %(lang)s {cond} )
                 ORDER BY weight
-            """, {"user_id": user_id})
+            """, {"lang": lang, "user_id": user_id})
 
             for row in cur:
                 section = Section.from_row(row)

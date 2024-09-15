@@ -17,6 +17,7 @@ from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
 from .lib.response import check_etag, create_etag
 from .lib.section import Section, SectionUser
+from .lib.settings import Language
 from .lib.topic import Topic
 from .lib.user import User
 from .lib.view import render_template
@@ -24,11 +25,40 @@ from .lib.view import render_template
 log = logging.getLogger(appname)
 
 
-@app.route("/s/<path>")
+# Public search must be defined later
+
+@app.route("/<lang:lang>/")
 @check_login_cookie
-def section_detail(req, path: str):
+def sections_root(req: Request, lang: str):
+    """Root / page"""
+    languages = Language.list(req.db)
+    langs = [language.lang for language in languages]
+
+    if lang not in langs:
+        abort(state.HTTP_NOT_FOUND)
+
+    user_id: int | None = -1
+    if req.user:
+        # Admin see all sections
+        user_id = None if req.user.is_admin() else req.user.id
+
+    sections = list(Section.list(req.db, lang, user_id))
+
+    pager = Pager()
+    pager.limit = 3
+    for section in sections:
+        section.topics = Topic.list(req.db, pager, section.id)
+    return render_template("index.html",
+                           languages=languages,
+                           me=req.user,
+                           sections=sections)
+
+
+@app.route("/<lang:lang>/<section_path>")
+@check_login_cookie
+def section_detail(req, lang: str, section_path: str):
     """Return section detail."""
-    section = Section.find(req.db, path)
+    section = Section.find(req.db, lang, section_path)
     if not section.has_access(req.db, req.user):
         abort(404)
 
@@ -43,6 +73,7 @@ def section_detail(req, path: str):
     check_etag(req.headers, etag)
 
     return Response(render_template("section.html",
+                                    languages=Language.list(req.db),
                                     me=req.user,
                                     section=section,
                                     topics=topics,
@@ -52,10 +83,10 @@ def section_detail(req, path: str):
 
 # Section administration
 
-
-def bind_section(section_id: int, form):
+def bind_section(section_id: int, form, languages: list[Language]):
     """Bind Form to Session."""
     title = form.get("title", "").strip()
+    lang = form.get("lang", "").strip()
     description = form.get("description", "").strip()
     private = "private" in form
     state_ = form.get("state", "").strip()
@@ -63,6 +94,8 @@ def bind_section(section_id: int, form):
     errors = {}
     if not title:
         errors["title"] = FormError.MISSING
+    if lang not in [lang_.lang for lang_ in languages]:
+        errors["lang"] = FormError.INVALID
     if not description:
         errors["description"] = FormError.MISSING
     if not state_:
@@ -73,7 +106,7 @@ def bind_section(section_id: int, form):
         state_ = Section.State.OPEN
         errors["state"] = FormError.INVALID
 
-    section = Section(section_id, title, description, state_, private)
+    section = Section(section_id, title, lang, description, state_, private)
     if not section.path:
         errors["path"] = FormError.INVALID
 
@@ -84,16 +117,17 @@ def bind_section(section_id: int, form):
 @auth_user(User.Role.MODERATOR)
 def section_list(req):
     """Return list of sections for administration."""
-    pager = Pager()
-    pager.bind(req.args)
+    lang = req.args.get("lang", app.default_lang)
+    languages = Language.list(req.db)
 
     # Admin see all sections
     user_id = None if req.user.is_admin() else req.user.id
-    sections = Section.list(req.db, user_id)
+    sections = Section.list(req.db, lang, user_id)
     return render_template("section/list.html",
                            me=req.user,
                            sections=sections,
-                           pager=pager)
+                           lang=lang,
+                           languages=languages)
 
 
 @app.route("/sections/<section_id:int>", method=state.METHOD_PATCH)
@@ -139,14 +173,19 @@ def section_patch(req: Request, section_id: int):
 @auth_user(role=User.Role.MODERATOR)
 def section_edit(req, section_id: int = 0):
     """Return section detail."""
+    lang = req.args.get("lang", app.default_lang)
+
     if section_id:
         section = Section.get(req.db, section_id)
         if not section or not section.has_access(req.db, req.user):
             abort(state.HTTP_NOT_FOUND)
     else:
-        section = Section(0, "", "", Section.State.OPEN, False)
+        section = Section(0, "", lang, "", Section.State.OPEN,
+                          False)
+    languages = Language.list(req.db)
 
-    return render_template("section/form.html", me=req.user, section=section)
+    return render_template("section/form.html", me=req.user, section=section,
+                           languages=languages, lang=lang)
 
 
 @app.route("/sections", method=state.METHOD_POST)
@@ -159,7 +198,8 @@ def section_update(req, section_id: int = 0):
         if not section or not section.has_access(req.db, req.user):
             abort(state.HTTP_NOT_FOUND)
 
-    section, errors = bind_section(section_id, req.form)
+    languages = list(Language.list(req.db))
+    section, errors = bind_section(section_id, req.form, languages)
 
     if not errors:
         try:
@@ -174,7 +214,8 @@ def section_update(req, section_id: int = 0):
     return render_template("section/form.html",
                            me=req.user,
                            section=section,
-                           errors=errors)
+                           errors=errors,
+                           languages=languages)
 
 
 @app.route("/sections/<section_id:int>/users")
