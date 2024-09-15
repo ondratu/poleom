@@ -57,13 +57,25 @@
     <div class="error">{{ errors.state.value }}</div>
     {% endif -%}
 
-    <input value="{{ "Update" if section.id else "Create" }}" type="submit">
-    <a class="right" href="/sections">Cancel</a>
+    <div id="users">
+      <label class="right">Search:
+        <input name="search" placeholder="User Name" autocomplete="off"></label>
+      <div class="clear"></div>
+      <div class="left p50 list-box"></div>
+      <div class="right p50 search-box"></div>
+    </div>
+
+    <div class="clear">
+      <input value="{{ "Update" if section.id else "Create" }}" type="submit">
+      <a class="right" href="/sections">Cancel</a>
+    </div>
   </form>
 
+  <script src="/js/section_users.js"></script>
   <script>
     $(document).ready(function() {
       let section_editor = new DocutilsEditor('#section-editor');
+      let section_users = new SectionUsers('#users', {{ section.id }});
     });
   </script>
 

@@ -242,6 +242,20 @@ class User:
                 yield User.from_row(row)
 
     @staticmethod
+    def search(conn: Connection, query):
+        """Get list of users from db when their name match the query."""
+        query = f"%{query}%"
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT user_id, name FROM users
+                WHERE (name LIKE %(query)s OR email LIKE %(query)s)
+                    AND state != "DELETED"
+                """, {"query": query})
+            for row in cur:
+                yield {"user_id": row[0], "name": row[1]}
+
+    @staticmethod
     def count(conn: Connection):
         """Return total count of items in db."""
         with conn.cursor() as cur:

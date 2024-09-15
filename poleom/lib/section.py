@@ -227,5 +227,43 @@ class SectionUser:
             """, {"section_id": section_id, "user_id": user_id})
             return bool(cur.fetchone())
 
+    @staticmethod
+    def add(conn: Connection, section_id: int, user_id: int):
+        """Add user to private list for section."""
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO sections_users (section_id, user_id)
+                        VALUES (%(section_id)s, %(user_id)s)
+                """, {"section_id": section_id, "user_id": user_id})
+                conn.commit()
+        except IntegrityError as err:
+            if err.args[0] == MYSQL_DUPLICITY:
+                raise DuplicityError from err
+            raise
+
+    @staticmethod
+    def remove(conn: Connection, section_id: int, user_id: int):
+        """Remove user from private list for section."""
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM sections_users WHERE
+                    section_id = %(section_id)s AND user_id = %(user_id)s
+            """, {"section_id": section_id, "user_id": user_id})
+            conn.commit()
+
+    @staticmethod
+    def list(conn: Connection, section_id: int):
+        """Get list of sections from db."""
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT U.user_id, U.name FROM sections_users AS US
+                JOIN users AS U ON (US.user_id = U.user_id)
+                WHERE section_id=%(section_id)s
+            """, {"section_id": section_id})
+
+            for row in cur:
+                yield {"user_id": row[0], "name": row[1]}
+
 
 DB_CONV[Section.State] = enum2str

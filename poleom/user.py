@@ -3,7 +3,12 @@ from datetime import datetime, timedelta
 from urllib import parse
 
 from poorwsgi import abort, redirect, state
-from poorwsgi.response import NoContentResponse, RedirectResponse, Response
+from poorwsgi.response import (
+    JSONGeneratorResponse,
+    NoContentResponse,
+    RedirectResponse,
+    Response,
+)
 
 from .lib.auth import (
     auth_user,
@@ -309,6 +314,15 @@ def get_users(req):
     users = User.list(req.db, pager)
     return render_template("user/list.html", me=req.user, users=users,
                            pager=pager)
+
+
+@app.route("/users/search")
+@auth_user(User.Role.MODERATOR)
+def search_users(req):
+    """Return simple list of users when their name match the query"""
+    query = req.args.get("q", "")
+    users = User.search(req.db, query) if query else []
+    return JSONGeneratorResponse(users=users)
 
 
 @app.route("/users/<user_id:int>")

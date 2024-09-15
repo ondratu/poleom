@@ -387,6 +387,9 @@ form div.error {
 .clear {
   clear: both;
 }
+.p50 {
+  width: 50%;
+}
 
 h3:has(.updown-button){
   background-color: #eee;
@@ -547,4 +550,26 @@ h3:has(.updown-button)+div{
 }
 .users td div img {
   padding-right: 5pt;
+}
+
+.list-box,
+.search-box {
+   height: 10em;
+   overflow: auto;
+}
+.list-box div,
+.search-box div {
+  padding-top: 2pt;
+  padding-bottom: 2pt;
+  border-bottom: 1px solid #ddd;
+}
+.list-box div:before {
+    content: "-";
+    padding-right: 8pt;
+    color: red;
+}
+.search-box div:before {
+    content: "+";
+    padding-right: 8pt;
+    color: blue;
 }

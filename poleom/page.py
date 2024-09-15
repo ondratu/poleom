@@ -1,7 +1,7 @@
 """Core page output."""
 from MySQLdb import ProgrammingError  # type: ignore[import-untyped]
 from poorwsgi import redirect, state
-from poorwsgi.response import JSONResponse
+from poorwsgi.response import JSONResponse, TextResponse
 
 from .lib.auth import auth_user, check_login_cookie
 from .lib.core import Request, app
@@ -54,3 +54,10 @@ def preview(req):
     return JSONResponse(status_code=200 if not errors else 202,
                         html=html,
                         errors=parse_system_messages(errors))
+
+
+@app.http_state(state.HTTP_CONFLICT)
+def http_conflict(_):
+    """Simple http conflict"""
+    # TODO: better smarter error result
+    return TextResponse("Entity exist yet", status_code=state.HTTP_CONFLICT)

@@ -1,14 +1,14 @@
-"""Endpoints for sections.
-
-TODO:
-    - přidávání uživatelů (hledání) do sekcí
-        - seznam uživatelů v detailu privátní sekce
-        - seznam privátní sekcí v profilu uživatele (když se kouká vlastník)
-"""
+"""Endpoints for sections."""
 import logging
 
 from poorwsgi import state
-from poorwsgi.response import JSONResponse, Response, abort
+from poorwsgi.response import (
+    JSONGeneratorResponse,
+    JSONResponse,
+    NoContentResponse,
+    Response,
+    abort,
+)
 
 from . import __name__ as appname
 from .lib.auth import auth_user, check_login_cookie
@@ -16,7 +16,7 @@ from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
 from .lib.response import check_etag, create_etag
-from .lib.section import Section
+from .lib.section import Section, SectionUser
 from .lib.topic import Topic
 from .lib.user import User
 from .lib.view import render_template
@@ -48,6 +48,7 @@ def section_detail(req, path: str):
                                     topics=topics,
                                     pager=pager),
                     headers={"ETag": etag})
+
 
 # Section administration
 
@@ -89,8 +90,10 @@ def section_list(req):
     # Admin see all sections
     user_id = None if req.user.is_admin() else req.user.id
     sections = Section.list(req.db, user_id)
-    return render_template("section/list.html", me=req.user,
-                           sections=sections, pager=pager)
+    return render_template("section/list.html",
+                           me=req.user,
+                           sections=sections,
+                           pager=pager)
 
 
 @app.route("/sections/<section_id:int>", method=state.METHOD_PATCH)
@@ -143,9 +146,7 @@ def section_edit(req, section_id: int = 0):
     else:
         section = Section(0, "", "", Section.State.OPEN, False)
 
-    return render_template("section/form.html",
-                           me=req.user,
-                           section=section)
+    return render_template("section/form.html", me=req.user, section=section)
 
 
 @app.route("/sections", method=state.METHOD_POST)
@@ -174,3 +175,50 @@ def section_update(req, section_id: int = 0):
                            me=req.user,
                            section=section,
                            errors=errors)
+
+
+@app.route("/sections/<section_id:int>/users")
+@auth_user(role=User.Role.MODERATOR)
+def section_users(req, section_id: int):
+    """Return list of associates users."""
+    section = Section.get(req.db, section_id)
+    if not section or not section.has_access(req.db, req.user):
+        abort(state.HTTP_NOT_FOUND)
+
+    users = SectionUser.list(req.db, section_id)
+    return JSONGeneratorResponse(users=users)
+
+
+@app.route("/sections/<section_id:int>/users/<user_id:int>",
+           method=state.METHOD_POST)
+@auth_user(role=User.Role.MODERATOR)
+def section_user_add(req, section_id: int, user_id: int):
+    """Add user to associates users."""
+    section = Section.get(req.db, section_id)
+    if not section or not section.has_access(req.db, req.user):
+        abort(state.HTTP_NOT_FOUND)
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+
+    try:
+        SectionUser.add(req.db, section_id, user_id)
+    except DuplicityError:
+        abort(state.HTTP_CONFLICT)
+    return NoContentResponse()
+
+
+@app.route("/sections/<section_id:int>/users/<user_id:int>",
+           method=state.METHOD_DELETE)
+@auth_user(role=User.Role.MODERATOR)
+def section_user_delete(req, section_id: int, user_id: int):
+    """Remove user from associates users."""
+    section = Section.get(req.db, section_id)
+    if not section or not section.has_access(req.db, req.user):
+        abort(state.HTTP_NOT_FOUND)
+    user = User.get(req.db, user_id)
+    if not user:
+        abort(state.HTTP_NOT_FOUND)
+
+    SectionUser.remove(req.db, section_id, user_id)
+    return NoContentResponse()
