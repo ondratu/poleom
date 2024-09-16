@@ -140,5 +140,5 @@ INSERT INTO sections (title, lang, path, description, weight) VALUES
     ("Všeobecné", "cs", "vseobecne", "Diskuze o čemkoli", 0),
     ("Nápady", "cs", "napady", "Nápady a podměty", 0),
     ("Otýzky a Odpovědi", "cs", "otazky-a-odpovedi", "Ptejte se komunity", 0),
-    ("Pochlub se", "cs", "pochlub-se", "Ukaž co jsi vytvořil", 0);
+    ("Pochlub se", "cs", "pochlub-se", "Ukaž, co jsi vytvořil", 0);
 UPDATE sections SET weight=section_id;

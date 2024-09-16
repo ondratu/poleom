@@ -64,6 +64,7 @@ class App(Application):
         logging.root.setLevel(log_level)
         logging.getLogger(appname).setLevel(log_level)
 
+        self.theme = options.get("theme", "poleom")
         self.title = options.get("title", "Poleom")
         self.default_lang = options.get("default_lang", "en")
 

@@ -98,6 +98,7 @@ def hbytes(val: float):
 
 
 environment.globals["title"] = app.title
+environment.globals["theme"] = app.theme
 environment.filters["md2rst"] = md2rst
 environment.filters["rst2html"] = jinja_rst2html
 environment.filters["sha256"] = sha256

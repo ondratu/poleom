@@ -1,5 +1,5 @@
 {# vim:set softtabstop=2: -#}
-{%- set params = pager.params + '&amp;' if length(pager.params) else '' %}
+{%- set params = pager.params + '&amp;' if pager.params else '' %}
 {%- set ordering = "" %}
 {%- if pager.order != pager.d_order %}
     {% set ordering = "order="+pager.order+"&amp;" %}
