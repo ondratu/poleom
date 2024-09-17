@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from MySQLdb import IntegrityError  # type: ignore[import-untyped]
-from MySQLdb.connections import Connection  # type: ignore[import-untyped]
+from MySQLdb import IntegrityError
+from MySQLdb.connections import Connection
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
 from .mysql import DB_CONV, DictCursor, enum2str
@@ -129,6 +129,9 @@ class Topic:
     def list(conn: Connection, pager: Pager, section_id: int):
         """Get list of topics from db."""
         with conn.cursor(DictCursor) as cur:
+            cur.execute(
+                "SET sql_mode="
+                "(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))")
             cur.execute("""
                 SELECT *, COUNT(P.topic_id) AS count, MAX(P.created) AS last,
                     U.name

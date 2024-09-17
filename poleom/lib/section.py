@@ -184,6 +184,9 @@ class Section:
             cond = "AND SU.user_id = %(user_id)s"
 
         with conn.cursor(DictCursor) as cur:
+            cur.execute(
+                "SET sql_mode="
+                "(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))")
             cur.execute(f"""
                 ( SELECT
                     S.*, count(T.section_id), NULL AS count FROM sections AS S

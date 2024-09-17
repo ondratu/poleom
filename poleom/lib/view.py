@@ -8,7 +8,7 @@ from io import StringIO
 from os.path import join
 
 from dateutil.tz.tz import tzfile  # type: ignore[import]
-from docutils.core import publish_parts  # type: ignore[import]
+from docutils.core import publish_parts
 from docutils_tinyhtml import Writer
 from jinja2 import Environment, FileSystemLoader
 from jinja2_template_info import TemplateInfoExtension
@@ -20,7 +20,7 @@ from .core import app
 RE_MESSAGE = re.compile(r"[<>\w]+:(\d+): \((\w+)/(\d+)\) (.*)", re.U)
 THOUSAND = 1000.0
 
-TEMPL_PATH = (str(files("jinja2_template_info")),
+TEMPL_PATH = (app.theme, str(files("jinja2_template_info")),
               join(str(files("poleom")), "templates"))
 
 environment = Environment(
@@ -28,7 +28,8 @@ environment = Environment(
     autoescape=True,
     extensions=["jinja2.ext.i18n", "jinja2.ext.do", "jinja2.ext.loopcontrols"])
 
-environment.install_gettext_translations(  # pylint: disable=no-member
+# pylint: disable=no-member
+environment.install_gettext_translations(  # type: ignore[attr-defined]
     NullTranslations())
 
 writer = Writer()

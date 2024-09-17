@@ -4,7 +4,6 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-yaml
-      - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 'v0.6.1'
@@ -27,7 +26,7 @@ repos:
     rev: v3.0.0a5
     hooks:
       - id: pylint
-        # call epylint direct from .venv virtualenv
+        # call pylint direct from .venv virtualenv
         entry: .venv/bin/pylint
         # accept virtualenv (pre-commit installed in venv)
         language: system
@@ -35,3 +34,7 @@ repos:
     rev: 'v1.11.1'
     hooks:
       - id: mypy
+        # call mypy direct from .venv virtualenv
+        entry: .venv/bin/mypy
+        # accept virtualenv (pre-commit installed in venv)
+        language: system

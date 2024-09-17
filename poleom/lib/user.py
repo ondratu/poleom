@@ -1,6 +1,7 @@
 """User record model."""
+import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from hashlib import sha3_512
 
@@ -52,6 +53,7 @@ class User:
     signature: str | None
     state: State
     role: Role = Role.MEMBER
+    data: dict = field(default_factory=dict)
 
     @property
     def id(self):
@@ -70,6 +72,7 @@ class User:
             "signature": self.signature,
             "state": self.state,
             "role": self.role,
+            "data": self.data,
         }
 
     def check_role(self, role: Role):
@@ -125,7 +128,7 @@ class User:
         """Return entity from DB row."""
         return User(row["user_id"], row["name"], row["email"],
                     row["signature"], User.State(row["state"]),
-                    User.Role(row["role"]))
+                    User.Role(row["role"]), json.loads(row["data"]))
 
     @staticmethod
     def create(conn: Connection,
@@ -145,10 +148,10 @@ class User:
                 cur.execute(
                     """
                     INSERT INTO users
-                        (name, email, password, signature, state, role)
+                        (name, email, password, signature, state, role, data)
                     VALUES
                         (%(name)s, %(email)s, %(password)s, %(signature)s,
-                         %(state)s, %(role)s)
+                         %(state)s, %(role)s, %(data)s)
                 """, dict(user.to_dict(), password=hashed.decode("utf-8")))
                 user._id = cur.lastrowid  # pylint: disable=protected-access
                 conn.commit()

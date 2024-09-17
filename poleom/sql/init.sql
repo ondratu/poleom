@@ -16,7 +16,7 @@ CREATE TABLE users (
     terms TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     state ENUM("ACTIVE", "REGISTERED", "BANNED", "DELETED") NOT NULL,
     role ENUM("MEMBER", "MODERATOR", "ADMIN") NOT NULL,
-    data JSON NOT NULL DEFAULT "{}",
+    data JSON NOT NULL,
 
     PRIMARY KEY user_id_pk (user_id),
     UNIQUE KEY email_uk (email)
@@ -111,7 +111,7 @@ CREATE TABLE attachments (
     mime_type VARCHAR(255) NOT NULL,
     file_name VARCHAR(1024) NOT NULL,
     hexdigest CHAR(64) NOT NULL,
-    data JSON NOT NULL DEFAULT "{}",
+    data JSON NOT NULL,
 
     INDEX post_id_ik (post_id),
     FOREIGN KEY attachements_posts_id_fk (post_id)
@@ -120,8 +120,8 @@ CREATE TABLE attachments (
 ) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- default data
-INSERT INTO users (name, email, password, state, role) VALUES
-    ("Admin", "root@localhost", "", "ACTIVE", "ADMIN");
+INSERT INTO users (name, email, password, state, role, data) VALUES
+    ("Admin", "root@localhost", "", "ACTIVE", "ADMIN", "{}");
 
 INSERT INTO languages (lang, locale, language) VALUES
     ("en", "en_US", "English"),
@@ -139,6 +139,6 @@ INSERT INTO sections (title, lang, path, description, weight) VALUES
 
     ("Všeobecné", "cs", "vseobecne", "Diskuze o čemkoli", 0),
     ("Nápady", "cs", "napady", "Nápady a podměty", 0),
-    ("Otýzky a Odpovědi", "cs", "otazky-a-odpovedi", "Ptejte se komunity", 0),
+    ("Otázky a Odpovědi", "cs", "otazky-a-odpovedi", "Ptejte se komunity", 0),
     ("Pochlub se", "cs", "pochlub-se", "Ukaž, co jsi vytvořil", 0);
 UPDATE sections SET weight=section_id;

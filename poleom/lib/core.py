@@ -5,8 +5,8 @@ from importlib.resources import files
 from os import W_OK, access, path
 
 from dateutil.tz import gettz  # type: ignore[import-untyped]
-from MySQLdb import connect  # type: ignore[import-untyped]
-from MySQLdb.connections import Connection  # type: ignore[import-untyped]
+from MySQLdb import connect
+from MySQLdb.connections import Connection
 from poorwsgi import Application, request
 
 from .. import __name__ as appname
@@ -64,7 +64,7 @@ class App(Application):
         logging.root.setLevel(log_level)
         logging.getLogger(appname).setLevel(log_level)
 
-        self.theme = options.get("theme", "poleom")
+        self.theme = path.abspath(options.get("theme", "./"))
         self.title = options.get("title", "Poleom")
         self.default_lang = options.get("default_lang", "en")
 
