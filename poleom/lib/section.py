@@ -189,7 +189,7 @@ class Section:
                 "(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))")
             cur.execute(f"""
                 ( SELECT
-                    S.*, count(T.section_id), NULL AS count FROM sections AS S
+                    S.*, count(T.section_id) AS count, NULL FROM sections AS S
                   LEFT JOIN topics AS T ON (T.section_id = S.section_id)
                     WHERE S.lang=%(lang)s AND S.private = 0
                     GROUP BY S.section_id )
