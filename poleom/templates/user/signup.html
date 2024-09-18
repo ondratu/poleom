@@ -4,7 +4,7 @@
 
     <h2>Sign up</h2>
 
-    <form class="form signup" method="post" action="/signup">
+    <form class="form signup" method="post" action="/signup?lang={{ lang }}">
       <label class="{{ "error" if "name" in errors }}">
         <span>Name:</span>
         <input name="name" value="{{ name or "" }}" maxlength="255"
@@ -49,7 +49,7 @@
       {% endif -%}
 
       <label class="{{ "error" if "accept_terms" in errors }}">
-        <span>Accept <a href="/terms">Terms and Conditions</a></span>
+        <span>Accept <a href="/terms?lang={{ lang }}">Terms and Conditions</a></span>
         <input name="accept_terms" type="checkbox"
                {{ "checked" if accept_terms or "" }}>
       </label>
@@ -59,7 +59,7 @@
 
       <div class="buttons">
         <input value="Sign up" type="submit"/>
-        <a class="right" href="/login">Log in</a>
+        <a class="right" href="/login?lang={{ lang }}">Log in</a>
       </div>
     </form>
 

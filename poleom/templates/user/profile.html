@@ -7,7 +7,7 @@
       <a href="https://gravatar.com/{{ user.email|sha256 }}">
         <img src="https://gravatar.com/avatar/{{ user.email|sha256 }}?s=256"></a>
       <div><span class="label">Name:</span> {{ user.name }}</div>
-      {% if me and me.email == user.email %}
+      {% if me and (me.email == user.email or me.is_moderator()) %}
       <div><span class="label">Email:</span> {{ user.email }}</div>
       {% endif %}
       <div><span class="label">Role:</span> {{ user.role.value }}</div>

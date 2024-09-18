@@ -7,7 +7,7 @@
     <h2>Reset Password</h2>
 
     <form class="form signup" method="post"
-          action="/c/{{ change_request.hexdigest }}">
+          action="/c/{{ change_request.hexdigest }}?lang={{ lang }}">
       <label class="{{ "error" if "password" in errors }}">
         <span>Password:</span>
         <input name="password" type="password"/>

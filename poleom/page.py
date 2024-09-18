@@ -7,23 +7,22 @@ from poorwsgi.response import JSONResponse, TextResponse
 from .lib.auth import auth_user
 from .lib.core import Request, app
 from .lib.settings import Language
-from .lib.view import md2rst, parse_system_messages, render_template, rst2html
+from .lib.view import md2rst, parse_system_messages, rst2html
 
 TABLE_DOESNT_EXIST_ERR = 1146
 
 
 @app.route("/")
 def root(req: Request):
-    """Root / page"""
+    """Root / page - redirect to lang list of sections."""
     language = app.default_lang
-    languages = Language.list(req.db)
+    languages = Language.map(req.db)
 
-    langs = [lang.lang for lang in languages]
     if "Accept-Language" in req.headers:
         accept_language = sorted(req.accept_language, key=itemgetter(1),
                                  reverse=True)
         for lang, _ in accept_language:
-            if lang in langs:
+            if lang in languages:
                 language = lang
                 break
 
@@ -37,9 +36,10 @@ def lang_redirect(_, lang: str):
 
 
 @app.route("/terms")
-def terms(_):
-    """Return Terms."""
-    return render_template("terms.html")
+def terms(req):
+    """Redirect to terms url defined in settings."""
+    lang = req.args.get("lang", app.default_lang)
+    redirect(app.terms.get(lang, app.terms.get(app.default_lang)))
 
 
 @app.route("/preview", method=state.METHOD_POST)

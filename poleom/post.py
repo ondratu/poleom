@@ -8,7 +8,7 @@ from .lib.core import Request, app
 from .lib.exceptions import FormError
 from .lib.pager import Pager
 from .lib.post import Post
-from .lib.view import render_template
+from .lib.response import render_response
 from .topic import ITEMS_ON_PAGE, find_topic, topic_page
 
 
@@ -28,8 +28,8 @@ def create_post(req, lang: str, section_path: str, topic_path: str):
         posts, pager, _ = topic_page(req, topic.id)
         # pylint: disable=duplicate-code
 
-        return render_template("topic.html",
-                               me=req.user,
+        return render_response("topic.html",
+                               req,
                                section=section,
                                topic=topic,
                                posts=posts,
@@ -67,8 +67,8 @@ def form_post(req, lang: str, section_path: str, topic_path: str,
 
     section, topic = find_topic(req.db, lang, section_path, topic_path,
                                 req.user)
-    return render_template("post_form.html",
-                           me=req.user,
+    return render_response("post_form.html",
+                           req,
                            section=section,
                            topic=topic,
                            post=post,
@@ -103,8 +103,8 @@ def update_post(req, lang: str, section_path: str, topic_path: str,
         errors = {"body": FormError.MISSING}
 
         attachments = list(Attachment.list(req.db, post.id))
-        return render_template("post_form.html",
-                               me=req.user,
+        return render_response("post_form.html",
+                               req,
                                section=section,
                                topic=topic,
                                post=post,

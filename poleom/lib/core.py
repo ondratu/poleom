@@ -64,9 +64,12 @@ class App(Application):
         logging.root.setLevel(log_level)
         logging.getLogger(appname).setLevel(log_level)
 
-        self.theme = path.abspath(options.get("theme", "./"))
+        self.theme = path.abspath(options.get("theme", "./poleom"))
         self.title = options.get("title", "Poleom")
         self.default_lang = options.get("default_lang", "en")
+        self.terms = {}  # TODO move to DB settings
+        self.terms["en"] = options.get("terms_en", "/not-found?lang=en")
+        self.terms["cs"] = options.get("terms_cs", "/not-found?lang=cs")
 
         # Data Source Name regular expression for mysql connection
         re_dsn = re.compile(
@@ -120,3 +123,4 @@ app.document_root = path.join(str(files("poleom")), "assets")
 def db_connect(req: Request):
     """Create DB connection."""
     req.db = connect(conv=DB_CONV, cursorclass=Cursor, **app.db_conf)
+    req.lang = app.default_lang

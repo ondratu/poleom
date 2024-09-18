@@ -16,7 +16,7 @@
         <td>{{ user.id }}</td>
         <td><div>
           <img src="https://gravatar.com/avatar/{{ user.email|sha256 }}?s=32">
-          <a href="/users/{{ user.id }}" data="name">{{ user.name }}</a>
+          <a href="/users/{{ user.id }}?lang={{ lang }}" data="name">{{ user.name }}</a>
           </div></td>
         <td>{{ user.email }}</td>
         <td>{{ user.role.value }}</td>
@@ -44,7 +44,7 @@
             {% endif %}
           {% endif %}
 
-            <a href="/users/{{ user.id }}">Profile</a>
+            <a href="/users/{{ user.id }}?lang={{ lang }}">Profile</a>
         </td>
       </tr>
     {% endfor %}

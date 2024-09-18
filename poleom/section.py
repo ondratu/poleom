@@ -15,12 +15,11 @@ from .lib.auth import auth_user, check_login_cookie
 from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
-from .lib.response import check_etag, create_etag
+from .lib.response import check_etag, create_etag, render_response
 from .lib.section import Section, SectionUser
 from .lib.settings import Language
 from .lib.topic import Topic
 from .lib.user import User
-from .lib.view import render_template
 
 log = logging.getLogger(appname)
 
@@ -31,11 +30,11 @@ log = logging.getLogger(appname)
 @check_login_cookie
 def sections_root(req: Request, lang: str):
     """Root / page"""
-    languages = Language.list(req.db)
-    langs = [language.lang for language in languages]
+    languages = Language.map(req.db)
 
-    if lang not in langs:
+    if lang not in languages:
         abort(state.HTTP_NOT_FOUND)
+    req.lang = lang
 
     user_id: int | None = -1
     if req.user:
@@ -48,9 +47,8 @@ def sections_root(req: Request, lang: str):
     pager.limit = 3
     for section in sections:
         section.topics = Topic.list(req.db, pager, section.id)
-    return render_template("index.html",
+    return render_response("index.html", req,
                            languages=languages,
-                           me=req.user,
                            sections=sections)
 
 
@@ -72,9 +70,7 @@ def section_detail(req, lang: str, section_path: str):
     etag = create_etag(last_modified, req.user.id if req.user else None)
     check_etag(req.headers, etag)
 
-    return Response(render_template("section.html",
-                                    languages=Language.list(req.db),
-                                    me=req.user,
+    return Response(render_response("section.html", req,
                                     section=section,
                                     topics=topics,
                                     pager=pager),
@@ -83,7 +79,7 @@ def section_detail(req, lang: str, section_path: str):
 
 # Section administration
 
-def bind_section(section_id: int, form, languages: list[Language]):
+def bind_section(section_id: int, form, languages: dict[str, Language]):
     """Bind Form to Session."""
     title = form.get("title", "").strip()
     lang = form.get("lang", "").strip()
@@ -94,7 +90,7 @@ def bind_section(section_id: int, form, languages: list[Language]):
     errors = {}
     if not title:
         errors["title"] = FormError.MISSING
-    if lang not in [lang_.lang for lang_ in languages]:
+    if lang not in languages:
         errors["lang"] = FormError.INVALID
     if not description:
         errors["description"] = FormError.MISSING
@@ -118,16 +114,13 @@ def bind_section(section_id: int, form, languages: list[Language]):
 def section_list(req):
     """Return list of sections for administration."""
     lang = req.args.get("lang", app.default_lang)
-    languages = Language.list(req.db)
+    req.lang = lang
 
     # Admin see all sections
     user_id = None if req.user.is_admin() else req.user.id
     sections = Section.list(req.db, lang, user_id)
-    return render_template("section/list.html",
-                           me=req.user,
-                           sections=sections,
-                           lang=lang,
-                           languages=languages)
+    return render_response("section/list.html", req,
+                           sections=sections)
 
 
 @app.route("/sections/<section_id:int>", method=state.METHOD_PATCH)
@@ -182,10 +175,8 @@ def section_edit(req, section_id: int = 0):
     else:
         section = Section(0, "", lang, "", Section.State.OPEN,
                           False)
-    languages = Language.list(req.db)
 
-    return render_template("section/form.html", me=req.user, section=section,
-                           languages=languages, lang=lang)
+    return render_response("section/form.html", req, section=section)
 
 
 @app.route("/sections", method=state.METHOD_POST)
@@ -198,7 +189,7 @@ def section_update(req, section_id: int = 0):
         if not section or not section.has_access(req.db, req.user):
             abort(state.HTTP_NOT_FOUND)
 
-    languages = list(Language.list(req.db))
+    languages = Language.map(req.db)
     section, errors = bind_section(section_id, req.form, languages)
 
     if not errors:
@@ -211,8 +202,8 @@ def section_update(req, section_id: int = 0):
             errors["title"] = FormError.DUPLICITY
             errors["path"] = FormError.DUPLICITY
 
-    return render_template("section/form.html",
-                           me=req.user,
+    return render_response("section/form.html",
+                           req,
                            section=section,
                            errors=errors,
                            languages=languages)

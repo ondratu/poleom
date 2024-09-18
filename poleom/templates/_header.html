@@ -23,28 +23,29 @@
   <body>
     <nav>
       <div class="page-width">
-        <h1 class="title"><a href="/">{{ title }}</a></h1>
+        <h1 class="title"><a href="/{{ lang }}/">{{ title }}</a></h1>
       {% if languages %}
         <div class="dropdown">
-          <a>Language</a>{# get from path #}
+          <a>{{ languages[lang].language }}</a>{# get from path #}
           <div class="menu" data="language">
-          {% for lang in languages %}
-            <a href="/{{ lang.lang }}/">{{ lang.language }}</a>
+          {% for key, val in languages.items() if key != lang %}
+            <a href="/{{ val.lang }}/">{{ val.language }}</a>
           {% endfor %}
           </div>
         </div>
       {% endif %}
       {%- if me %}
         <div class="dropdown">
-          <a>{{ me.name }}</a>
+          <a title="{{ me.name }}">
+            <img src="https://gravatar.com/avatar/{{ me.email|sha256 }}?s=48"></a>
           <div class="menu" data="account">
-            <a href="/user/profile">Profile</a>
-            <a href="/user/account">Settings</a>
+            <a href="/user/profile?lang={{ lang }}">Profile</a>
+            <a href="/user/account?lang={{ lang }}">Settings</a>
             <hr/>
           {%- if me.is_moderator() %}
-            <a href="/sections">Sections</a>
+            <a href="/sections?lang={{ lang }}">Sections</a>
           {%- if me.is_admin() %}
-            <a href="/users">Users</a>
+            <a href="/users?lang={{ lang }}">Users</a>
           {%- endif %}
             <hr/>
           {%- endif %}{# // is_moderator #}
@@ -52,8 +53,8 @@
           </div>
         </div>
       {%- elif notheader is not defined %}
-        <a href="/login" class="button">Log in</a>
-        <a href="/signup" class="button">Sign up</a>
+        <a href="/login?lang={{ lang }}" class="button">Log in</a>
+        <a href="/signup?lang={{ lang }}" class="button">Sign up</a>
       {%- else %}
         <div>&nbsp;</div>
       {%- endif %}

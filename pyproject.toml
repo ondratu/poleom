@@ -30,6 +30,9 @@ dependencies = [
   "docutils",
   "docutils-tinyhtmlwriter",
   "m2r2",
+  "python-dateutil",
+  "falias @ git+https://github.com/ondratu/falias.git",
+  "simplejson",
 ]
 
 [tool.setuptools]
@@ -52,6 +55,9 @@ lint = [
 
 typecheck = [
     "mypy",
+    "types-mysqlclient",
+    "types_docutils",
+    "types-python-dateutil",
 ]
 
 format = [

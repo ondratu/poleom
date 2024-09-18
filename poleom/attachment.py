@@ -3,12 +3,11 @@ from os import path
 
 from poorwsgi import state
 from poorwsgi.headers import parse_range, time_to_http
-from poorwsgi.request import Request
 from poorwsgi.response import FileResponse, NoContentResponse, abort
 
 from .lib.attachment import Attachment
 from .lib.auth import auth_user
-from .lib.core import app
+from .lib.core import Request, app
 from .lib.post import Post
 from .lib.response import check_etag, check_modified, create_etag
 

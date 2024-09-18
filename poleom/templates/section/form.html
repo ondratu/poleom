@@ -8,7 +8,8 @@
 {% endif %}
 <div>
 
-  <form method="post" action="/sections{{ "/"+section.id|string if section.id else "" }}">
+  <form method="post"
+        action="/sections{{ "/"+section.id|string if section.id else "" }}?lang={{ lang }}">
     <label class="{{ "error" if "title" in errors }}">
       Title:
       <input name="title" placeholder="Section Title" maxlength="255"
@@ -32,7 +33,7 @@
     <label for="section-editor">Description:</label>
     <label class="right">Language:
       <select name="lang">
-      {% for item in languages %}
+      {% for item in languages.values() %}
         <option value="{{ item.lang }}" {{ 'selected="selected"' if section.lang == item.lang else "" }}>{{ item.language }}</option>
       {% endfor %}
       </select>
@@ -77,7 +78,7 @@
 
     <div class="clear">
       <input value="{{ "Update" if section.id else "Create" }}" type="submit">
-      <a class="right" href="/sections">Cancel</a>
+      <a class="right" href="/sections?lang={{ lang }}">Cancel</a>
     </div>
   </form>
 

@@ -20,9 +20,9 @@ from .lib.change_request import ChangeRequest
 from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
+from .lib.response import render_response
 from .lib.smtp import Email
 from .lib.user import User
-from .lib.view import render_template
 
 
 @app.route("/login")
@@ -31,7 +31,9 @@ def login_page(req):
     """Return log in page."""
     if req.user:
         redirect(req.referer or "/")
-    return render_template("user/login.html", redirect_url=req.referer)
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+    return render_response("user/login.html", req, redirect_url=req.referer)
 
 
 @app.route("/login", method=state.METHOD_POST)
@@ -43,8 +45,12 @@ def login(req):
 
     user = User.find(req.db, email, password)
     if not user:
+        lang = req.args.get("lang", app.default_lang)
+        req.lang = lang
+
         uri = parse.urlparse(req.referer)
-        return render_template("user/login.html",
+        return render_response("user/login.html",
+                               req,
                                email=email,
                                redirect_url=redirect_url,
                                error=True)
@@ -68,20 +74,29 @@ def logout(req):
 
 @app.route("/signup")
 @check_login_cookie
-def signup_page(_):
+def signup_page(req):
     """Return log in page."""
-    return render_template("user/signup.html", errors={})
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+    return render_response("user/signup.html", req, errors={})
 
 
 @app.route("/signup-check")
-def signup_check(_):
+def signup_check(req):
     """Test check page only"""
-    return render_template("user/signup-check.html", sender=app.smtp.sender)
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
+    return render_response("user/signup-check.html", req,
+                           sender=app.smtp.sender)
 
 
 @app.route("/signup", method=state.METHOD_POST)
 def signup(req):
     """Create account."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     name = req.form.get("name", "").strip()
     email = req.form.get("email", "").strip()
     signature = req.form.get("signature", "").strip() or None
@@ -106,7 +121,8 @@ def signup(req):
         errors["accept_terms"] = FormError.MISSING
 
     if errors:
-        return render_template("user/signup.html",
+        return render_response("user/signup.html",
+                               req,
                                name=name,
                                email=email,
                                signature=signature,
@@ -117,7 +133,8 @@ def signup(req):
         user = User.create(req.db, name, email, password, signature)
     except DuplicityError:
         errors["email"] = FormError.DUPLICITY
-        return render_template("user/signup.html",
+        return render_response("user/signup.html",
+                               req,
                                name=name,
                                email=email,
                                signature=signature,
@@ -130,28 +147,38 @@ def signup(req):
         })
     change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return render_template("user/signup-check.html", sender=app.smtp.sender)
+    return render_response("user/signup-check.html", req,
+                           sender=app.smtp.sender)
 
 
 @app.route("/user/profile")
 @auth_user()
 def profile(req: Request):
     """Return user profile."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     user = req.user
-    return render_template("user/profile.html", me=req.user, user=user)
+    return render_response("user/profile.html", req, user=user)
 
 
 @app.route("/user/account")
 @auth_user()
 def user_account(req):
     """Return user account form."""
-    return render_template("user/account.html", user=req.user)
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
+    return render_response("user/account.html", req, user=req.user)
 
 
 @app.route("/user/account", method=state.METHOD_POST)
 @auth_user()
 def user_account_set(req):
     """Change user account."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     name = req.form.get("name", "").strip()
     email = req.form.get("email", "").strip()
     signature = req.form.get("signature", "").strip() or None
@@ -179,7 +206,8 @@ def user_account_set(req):
     req.user.signature = signature
 
     if errors:
-        return render_template("user/account.html",
+        return render_response("user/account.html",
+                               req,
                                user=req.user,
                                errors=errors)
 
@@ -200,14 +228,17 @@ def user_account_set(req):
                                               data)
         change_request.send_email(app.smtp, req.user, req.construct_url(""))
 
-    return RedirectResponse("/user/account#save-done")
+    return RedirectResponse(f"/user/account?lang={lang}#save-done")
 
 
 @app.route("/user/reset-password", method=state.METHOD_GET_POST)
 def reset_password_request(req: Request):
     """Return user account form."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     if req.method_number != state.METHOD_POST:
-        return render_template("user/reset-password-request.html")
+        return render_response("user/reset-password-request.html", req)
 
     email = req.form.get("email", "").strip()
 
@@ -222,7 +253,8 @@ def reset_password_request(req: Request):
         errors["email"] = FormError.MISMATCH
 
     if errors:
-        return render_template("user/reset-password-request.html",
+        return render_response("user/reset-password-request.html",
+                               req,
                                errors=errors)
 
     change_request = ChangeRequest.create(
@@ -232,12 +264,15 @@ def reset_password_request(req: Request):
         })
     change_request.send_email(app.smtp, user, req.construct_url(""))
 
-    return render_template("user/reset-password-request.html", sent=True)
+    return render_response("user/reset-password-request.html", req, sent=True)
 
 
 @app.route("/c/<hexdigest:hex>")
 def accept_change_request(req: Request, hexdigest: str):
     """Accept change request / change request form."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     change_request = ChangeRequest.get(req.db, hexdigest)
     if not change_request:
         abort(state.HTTP_NOT_FOUND)  # TODO: Request Not Found
@@ -255,12 +290,13 @@ def accept_change_request(req: Request, hexdigest: str):
         change_request.accept(req.db)
 
         session = create_login_cookie(user.id)
-        res = RedirectResponse("/user/profile")
+        res = RedirectResponse(f"/user/profile?lang={lang}")
         session.header(res)
         return res
 
     if change_request.state == ChangeRequest.State.PASSWORD:
-        return render_template("user/change-request.html",
+        return render_response("user/change-request.html",
+                               req,
                                change_request=change_request)
 
     return Response(status_code=state.HTTP_BAD_REQUEST)
@@ -269,6 +305,9 @@ def accept_change_request(req: Request, hexdigest: str):
 @app.route("/c/<hexdigest:hex>", method=state.METHOD_POST)
 def post_change_request(req, hexdigest: str):
     """Accept change request."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     change_request = ChangeRequest.get(req.db, hexdigest)
     if not change_request:
         abort(state.HTTP_NOT_FOUND)
@@ -288,14 +327,15 @@ def post_change_request(req, hexdigest: str):
             errors["password_again"] = FormError.MISMATCH
 
         if errors:
-            return render_template("user/reset-password-request.html",
+            return render_response("user/reset-password-request.html",
+                                   req,
                                    change_request=change_request,
                                    errors=errors)
 
         user = User.get(req.db, change_request.user_id)
         user.update(req.db, password=password)
         session = create_login_cookie(user.id)
-        res = RedirectResponse("/user/profile")
+        res = RedirectResponse(f"/user/profile?lang={lang}")
         session.header(res)
         return res
 
@@ -308,12 +348,14 @@ def post_change_request(req, hexdigest: str):
 @auth_user(User.Role.ADMIN)
 def get_users(req):
     """Return list of users and their state."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     pager = Pager()
     pager.bind(req.args)
 
     users = User.list(req.db, pager)
-    return render_template("user/list.html", me=req.user, users=users,
-                           pager=pager)
+    return render_response("user/list.html", req, users=users, pager=pager)
 
 
 @app.route("/users/search")
@@ -329,10 +371,13 @@ def search_users(req):
 @check_login_cookie
 def user_profile(req: Request, user_id):
     """Return user profile."""
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
     user = User.get(req.db, user_id)
     if not user:
         abort(state.HTTP_NOT_FOUND)
-    return render_template("user/profile.html", me=req.user, user=user)
+    return render_response("user/profile.html", req, user=user)
 
 
 @app.route("/users/<user_id:int>/ban", method=state.METHOD_POST)

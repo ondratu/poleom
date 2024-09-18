@@ -4,7 +4,7 @@
     <h2>Sections
       <a class="right button" href="/sections/new?lang={{ lang }}">New Section</a>
       <select class="right button" name="lang">
-      {% for item in languages %}
+      {% for item in languages.values() %}
         <option value="{{ item.lang }}" {{ 'selected="selected"' if lang == item.lang else "" }}>{{ item.language }}</option>
       {% endfor %}
       </select>
@@ -45,7 +45,7 @@
           {% if section.state.value != "OPEN" %}
             <a cmd="open" section-id="{{ section.id }}">Open</a> |
           {% endif %}
-            <a href="/sections/{{ section.id }}">Edit</a>
+            <a href="/sections/{{ section.id }}?lang={{ lang }}">Edit</a>
         </td>
       </tr>
       <tr>

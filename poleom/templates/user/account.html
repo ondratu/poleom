@@ -4,7 +4,7 @@
 
     <h2>User Account</h2>
 
-    <form class="form signup" method="post" action="/user/account">
+    <form class="form signup" method="post" action="/user/account?lang={{ lang }}">
       <label class="{{ "error" if "name" in errors }}">
         <span>Name:</span>
         <input name="name" value="{{ user.name or "" }}" maxlength="255"

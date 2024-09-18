@@ -7,7 +7,7 @@ from importlib.resources import files
 from io import StringIO
 from os.path import join
 
-from dateutil.tz.tz import tzfile  # type: ignore[import]
+from dateutil.tz.tz import tzfile
 from docutils.core import publish_parts
 from docutils_tinyhtml import Writer
 from jinja2 import Environment, FileSystemLoader
@@ -20,7 +20,8 @@ from .core import app
 RE_MESSAGE = re.compile(r"[<>\w]+:(\d+): \((\w+)/(\d+)\) (.*)", re.U)
 THOUSAND = 1000.0
 
-TEMPL_PATH = (app.theme, str(files("jinja2_template_info")),
+TEMPL_PATH = (join(app.theme, "templates"),
+              str(files("jinja2_template_info")),
               join(str(files("poleom")), "templates"))
 
 environment = Environment(
@@ -107,13 +108,14 @@ environment.filters["local"] = local
 environment.filters["hbytes"] = hbytes
 
 
-def render_template(template, **kwargs):
+def render_template(template: str, **kwargs):
     """Return generated ouptut fromjinja template."""
     if app.debug:
         env = environment.overlay()
         env.add_extension(TemplateInfoExtension)
-        env.globals["template_info"].data = kwargs.copy()
-        env.globals["template_info"].template = template
+        template_info = env.globals["template_info"]
+        template_info.data = kwargs.copy()  # type: ignore[attr-defined]
+        template_info.template = template  # type: ignore[attr-defined]
     else:
         env = environment
 

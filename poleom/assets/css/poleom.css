@@ -29,6 +29,13 @@ nav > * > a, nav > * > a:visited {
   white-space: nowrap;
 }
 
+nav img {
+  border-radius: 50%;
+  position: relative;
+  padding: 0px;
+  vertical-align: middle;
+}
+
 .dropdown {
   position: relative;
   display: inline-block;

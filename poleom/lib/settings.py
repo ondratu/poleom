@@ -31,15 +31,15 @@ class Language:
                         row["active"])
 
     @staticmethod
-    def list(conn: Connection, only_active=False):
-        """Get list of languages from db."""
+    def map(conn: Connection, only_active=False):
+        """Get map (dict) of languages from db when lang is key."""
         cond = ""
         if only_active:
             cond = "WHERE active=1"
         with conn.cursor(DictCursor) as cur:
             # ruff: noqa: S608
             cur.execute(f"SELECT * FROM languages ORDER BY lang {cond}")
-            result = []
+            result = {}
             for row in cur:
-                result.append(Language.from_row(row))
+                result[row["lang"]] = Language.from_row(row)
             return result

@@ -11,11 +11,10 @@ from .lib.core import app
 from .lib.exceptions import DuplicityError
 from .lib.pager import Pager
 from .lib.post import Post
-from .lib.response import check_etag, create_etag
+from .lib.response import check_etag, create_etag, render_response
 from .lib.section import Section
 from .lib.topic import Topic
 from .lib.user import User
-from .lib.view import render_template
 
 ITEMS_ON_PAGE = 10
 
@@ -93,8 +92,8 @@ def topic_detail(req, lang: str, section_path: str, topic_path: str):
                                 req.user)
     posts, pager, etag = topic_page(req, topic.id, check=True)
 
-    return Response(render_template("topic.html",
-                                    me=req.user,
+    return Response(render_response("topic.html",
+                                    req,
                                     section=section,
                                     topic=topic,
                                     posts=posts,
