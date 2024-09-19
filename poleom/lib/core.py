@@ -87,7 +87,7 @@ class App(Application):
             "host": match.group("host") or "localhost",
             "port": int(match.group("port") or 3306),
             "database": match.group("db"),
-            "charset": match.group("charset") or "utf8",
+            "charset": match.group("charset") or "utf8mb4",
             "user": match.group("user"),
         }
         password = match.group("password")

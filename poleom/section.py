@@ -57,7 +57,7 @@ def sections_root(req: Request, lang: str):
 def section_detail(req, lang: str, section_path: str):
     """Return section detail."""
     section = Section.find(req.db, lang, section_path)
-    if not section.has_access(req.db, req.user):
+    if not section or not section.has_access(req.db, req.user):
         abort(404)
 
     pager = Pager(limit=20)

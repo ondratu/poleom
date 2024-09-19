@@ -18,7 +18,7 @@
         <span>Email:</span>
         <input name="email" type="email" value="{{ email or "" }}"
                maxlength="200" placeholder="john.doe@example.com"
-          size="35"/>
+                size="35"/>
       </label>
       {% if "email" in errors %}
       <div class="error">{{ errors.email.value }}</div>
@@ -32,7 +32,7 @@
 
       <label class="{{ "error" if "password" in errors }}">
         <span>Password:</span>
-        <input name="password" type="password"/>
+        <input name="password" type="password" autocomplete="new-password"/>
       </label>
       {% if "password" in errors %}
       <div class="error">{{ errors.password.value }}</div>
@@ -42,7 +42,7 @@
 
       <label class="{{ "error" if "password_again" in errors }}">
         <span>Password again:</span>
-        <input name="password_again" type="password"/>
+        <input name="password_again" type="password" autocomplete="new-password"/>
       </label>
       {% if "password_again" in errors %}
       <div class="error">{{ errors.password_again.value }}</div>
