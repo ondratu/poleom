@@ -1,4 +1,8 @@
 {# vim:set softtabstop=2: -#}
+{% set title_post = " | " + topic.title -%}
+{% set description = posts[0].body|md2rst|rst2html|striptags|truncate(180) -%}
+{% set published_time = posts[0].created.isoformat() -%}
+{% set author = posts[0].user.name -%}
 {% include("_header.html") %}
 
 <ul class="breadcrumb">

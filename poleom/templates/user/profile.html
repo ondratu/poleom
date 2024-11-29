@@ -1,4 +1,7 @@
 {# vim:set softtabstop=2: -#}
+{% set title_post = " | " + user.name -%}
+{% set description = user.signature|md2rst|rst2html|striptags|truncate(180) -%}
+{% set username = user.name -%}
 {% include("_header.html") %}
 
     <h2>User Profile</h2>
