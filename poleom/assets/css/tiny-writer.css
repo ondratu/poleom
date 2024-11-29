@@ -48,3 +48,14 @@ blockquote {
     margin: 0 0 1em 0;
     border-left: 4px solid #aaa;
 }
+
+fieldset {
+    border: 2px groove #f47f00;
+    border-radius: 4px;
+}
+
+fieldset legend {
+  font-weight: bold;
+  padding-left: 8px;
+  padding-right: 8px;
+}

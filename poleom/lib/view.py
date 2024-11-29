@@ -53,7 +53,7 @@ def parse_system_messages(out):
     return tuple(retval)
 
 
-def rst2html(src):
+def rst2html(src, system_messages=False):
     """Check RestructuredText source."""
     err_stream = StringIO()
     parts = publish_parts(source=src,
@@ -61,8 +61,9 @@ def rst2html(src):
                           writer_name="htm",
                           settings_overrides={
                               "warning_stream": err_stream,
-                              "no_system_messages": True,
+                              "no_system_messages": not system_messages,
                               "initial_header_level": 3,
+                              "halt_level": 100,
                           })
     body = parts["body"]
     if parts["title"]:

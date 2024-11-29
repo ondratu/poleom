@@ -50,7 +50,7 @@ def preview(req):
     if not source:
         return JSONResponse(errors=[], html="")
 
-    html, errors = rst2html(md2rst(source))
+    html, errors = rst2html(md2rst(source), system_messages=True)
     return JSONResponse(status_code=200 if not errors else 202,
                         html=html,
                         errors=parse_system_messages(errors))

@@ -50,7 +50,7 @@
     <input id="parent_hexdigest" name="parent" value="{{ parent or "" }}" readonly>
   </div>
   <textarea name="body" id="post-editor" placeholder="Your post message"
-            cols="80" rows="10">{{ body or ""}}</textarea>
+            cols="80" rows="15">{{ body or ""}}</textarea>
   <br/>
   {% if "body" in errors %}
   <div class="error">{{ errors.body.value }}</div>
