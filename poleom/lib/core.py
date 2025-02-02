@@ -82,7 +82,10 @@ class App(Application):
                                   (::(?P<charset>\w+))?
                                """, re.X)
 
-        match = re_dsn.match(options.get("db"))
+        match = re_dsn.match(options.get("db", ""))
+        if not match:
+            msg = "Not valid data source name for MySQL in `app_db`!"
+            raise ValueError(msg)
         self.db_conf = {
             "host": match.group("host") or "localhost",
             "port": int(match.group("port") or 3306),
@@ -97,7 +100,7 @@ class App(Application):
         self.secret_key = options.get("secret_key")
         if not self.secret_key:
             error = "Not secret_key set!"
-            raise RuntimeWarning(error)
+            raise ValueError(error)
 
         self.smtp = Smtp(options.get("smtp", ""))
         self.smtp.timeout = 10
@@ -108,10 +111,10 @@ class App(Application):
         self.attachments = options.get("attachments", "./attachments")
         if not path.isdir(self.attachments):
             msg = f"Attachments `{self.attachments}` is not directory."
-            raise RuntimeWarning(msg)
+            raise ValueError(msg)
         if not access(self.attachments, W_OK):
             msg = f"Attachments `{self.attachments}` is not writable."
-            raise RuntimeWarning(msg)
+            raise ValueError(msg)
 
 
 app = App()

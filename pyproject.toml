@@ -66,6 +66,8 @@ format = [
 
 test = [
     "pytest",
+    "pytest-doctestplus",
+    "pytest-dotenv"
 ]
 
 server = [
@@ -140,4 +142,4 @@ lint.ignore = [
 ]
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ["fixme"]
+disable = ["fixme", "too-few-public-methods"]

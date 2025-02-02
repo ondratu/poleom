@@ -48,12 +48,12 @@ class Smtp:
     def __init__(self, dsn):
         """Raise RuntimeError when dsn is not valid.
 
-        Data Source Name for smtp looks like: smtp://localhost/mcbig@localhost
+        Data Source Name for smtp looks like: smtp://localhost/user@localhost
         """
         match = re_dsn.match(dsn)
         if not match:
-            msg = f"Bad SMTP Data Source Name `{dsn}`"
-            raise RuntimeError(msg)
+            msg = "Not valid Data Source Name for SMTP in `app_smtp`!"
+            raise ValueError(msg)
 
         self.protocol = match.group("protocol")
         self.host = match.group("host") or "localhost"
