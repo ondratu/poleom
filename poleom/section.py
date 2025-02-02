@@ -43,8 +43,7 @@ def sections_root(req: Request, lang: str):
 
     sections = list(Section.list(req.db, lang, user_id))
 
-    pager = Pager()
-    pager.limit = 3
+    pager = Pager(limit=3, order="last", sort="desc")
     for section in sections:
         section.topics = Topic.list(req.db, pager, section.id)
     return render_response("index.html", req,
@@ -60,7 +59,7 @@ def section_detail(req, lang: str, section_path: str):
     if not section or not section.has_access(req.db, req.user):
         abort(404)
 
-    pager = Pager(limit=20)
+    pager = Pager(limit=20, order="last", sort="desc")
     topics = list(Topic.list(req.db, pager, section_id=section.id))
     last_modified = 0
     for topic in topics:

@@ -128,18 +128,21 @@ class Topic:
     @staticmethod
     def list(conn: Connection, pager: Pager, section_id: int):
         """Get list of topics from db."""
+        order_sql = ""
+        if pager.order:
+            order_sql = f"ORDER BY {pager.order} {pager.sort.upper()}"
         with conn.cursor(DictCursor) as cur:
             cur.execute(
                 "SET sql_mode="
                 "(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))")
-            cur.execute("""
+            cur.execute(f"""
                 SELECT *, COUNT(P.topic_id) AS count, MAX(P.created) AS last,
                     U.name
                 FROM topics AS T
                     LEFT JOIN posts AS P ON (P.topic_id = T.topic_id)
                     LEFT JOIN users AS U ON (U.user_id = P.user_id)
                 WHERE section_id=%(section_id)s
-                GROUP BY T.topic_id
+                GROUP BY T.topic_id {order_sql}
                 LIMIT %(OFFSET)s, %(LIMIT)s
             """, dict(pager.sql_dict(), section_id=section_id))
             for row in cur:
