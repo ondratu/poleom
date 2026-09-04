@@ -13,7 +13,7 @@ def check_login_cookie(fun):
     """Check login session."""
     @wraps(fun)
     def handler(req, *args, **kwargs):
-        session = PoorSession(app.secret_key, same_site=True)
+        session = PoorSession(app.secret_key, same_site="Strict")
         try:
             session.load(req.cookies)
             if session.data:
@@ -28,14 +28,14 @@ def check_login_cookie(fun):
 
 def create_login_cookie(user_id: int) -> PoorSession:
     """Create PoorSession object with user_id."""
-    session = PoorSession(app.secret_key, same_site=True)
+    session = PoorSession(app.secret_key, same_site="Strict")
     session.data["user_id"] = user_id
     return session
 
 
 def destroy_login_cookie(cookies) -> PoorSession:
     """Destroy existed session cookie."""
-    session = PoorSession(app.secret_key, same_site=True)
+    session = PoorSession(app.secret_key, same_site="Strict")
     try:
         session.load(cookies)
         if session.data:
