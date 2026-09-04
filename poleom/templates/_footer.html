@@ -15,6 +15,15 @@
           Create by Ondřej Tůma 2024.
           Found a bug? Please <a href="https://github.com/ondratu/poleom/issues">
             report</a> it.
+          <br/>
+          RSS:
+          <a href="/{{ lang }}/rss">{{ languages[lang].language if languages and lang in languages else lang }}</a>
+        {%- if section is defined %}
+          | <a href="/{{ section.lang }}/{{ section.path }}/rss">{{ section.title }}</a>
+        {%- endif %}
+        {%- if topic is defined %}
+          | <a href="/{{ section.lang }}/{{ section.path }}/{{ topic.path }}/rss">{{ topic.title }}</a>
+        {%- endif %}
         </small></center>
         {%- if template_info is defined %}
         {%- from 'template_info.html' import render_info %}

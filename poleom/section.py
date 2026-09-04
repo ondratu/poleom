@@ -1,5 +1,6 @@
 """Endpoints for sections."""
 import logging
+from datetime import datetime
 
 from poorwsgi import state
 from poorwsgi.response import (
@@ -16,6 +17,7 @@ from .lib.core import Request, app
 from .lib.exceptions import DuplicityError, FormError
 from .lib.pager import Pager
 from .lib.response import check_etag, create_etag, render_response
+from .lib.rss import RSS_ITEMS, rss_response
 from .lib.section import Section, SectionUser
 from .lib.settings import Language
 from .lib.topic import Topic
@@ -51,6 +53,33 @@ def sections_root(req: Request, lang: str):
                            sections=sections)
 
 
+@app.route("/<lang:lang>/rss")
+@check_login_cookie
+def lang_rss(req: Request, lang: str):
+    """Return RSS feed with recent topics for whole language."""
+    languages = Language.map(req.db)
+    if lang not in languages:
+        abort(state.HTTP_NOT_FOUND)
+
+    user_id: int | None = -1
+    if req.user:
+        user_id = None if req.user.is_admin() else req.user.id
+
+    sections = list(Section.list(req.db, lang, user_id))
+    items: list[tuple[Section, Topic]] = []
+    for section in sections:
+        pager = Pager(limit=RSS_ITEMS, order="last", sort="desc")
+        items.extend((section, topic)
+                     for topic in Topic.list(req.db, pager, section.id))
+    items.sort(key=lambda pair: pair[1].last or datetime.min, reverse=True)
+    items = items[:RSS_ITEMS]
+
+    lang_url = req.construct_url(f"/{lang}")
+    return rss_response("rss/lang.xml", req,
+                        items=items, lang=lang, languages=languages,
+                        lang_url=lang_url)
+
+
 @app.route("/<lang:lang>/<section_path>")
 @check_login_cookie
 def section_detail(req, lang: str, section_path: str):
@@ -74,6 +103,23 @@ def section_detail(req, lang: str, section_path: str):
                                     topics=topics,
                                     pager=pager),
                     headers={"ETag": etag})
+
+
+@app.route("/<lang:lang>/<section_path>/rss")
+@check_login_cookie
+def section_rss(req, lang: str, section_path: str):
+    """Return RSS feed with recent topics of a section."""
+    section = Section.find(req.db, lang, section_path)
+    if not section or not section.has_access(req.db, req.user):
+        abort(404)
+
+    pager = Pager(limit=RSS_ITEMS, order="last", sort="desc")
+    topics = list(Topic.list(req.db, pager, section_id=section.id))
+
+    section_url = req.construct_url(f"/{lang}/{section_path}")
+    return rss_response("rss/section.xml", req,
+                        section=section, topics=topics,
+                        section_url=section_url, lang=lang)
 
 
 # Section administration

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>{{ title }} | {{ languages[lang].language }}</title>
+    <link>{{ lang_url }}</link>
+    <atom:link href="{{ self_url }}" rel="self" type="application/rss+xml"/>
+    <description>{{ title }} - {{ languages[lang].language }}</description>
+    <language>{{ lang }}</language>
+{%- if items %}
+    <lastBuildDate>{{ items[0][1].last|rfc822 }}</lastBuildDate>
+{%- endif %}
+{%- for section, topic in items %}
+    <item>
+      <title>{{ section.title }} / {{ topic.title }}</title>
+      <link>{{ lang_url }}/{{ section.path }}/{{ topic.path }}</link>
+      <guid isPermaLink="true">{{ lang_url }}/{{ section.path }}/{{ topic.path }}</guid>
+      <pubDate>{{ topic.last|rfc822 }}</pubDate>
+      <dc:creator>{{ topic.user_name }}</dc:creator>
+      <description>{{ section.title }}: {{ topic.count }} posts, last by {{ topic.user_name }}</description>
+    </item>
+{%- endfor %}
+  </channel>
+</rss>

@@ -1,7 +1,8 @@
 """Response generate module."""
 import hashlib
 import re
-from datetime import datetime
+from datetime import UTC, datetime
+from email.utils import format_datetime
 from gettext import NullTranslations
 from importlib.resources import files
 from io import StringIO
@@ -90,6 +91,13 @@ def local(value: datetime, time_zone: tzfile):
     return value.astimezone(time_zone)
 
 
+def rfc822(value: datetime):
+    """Format datetime value as RFC 822 date, used for RSS pubDate."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return format_datetime(value)
+
+
 def hbytes(val: float):
     """Return value with unit."""
     unit = ("B", "kB", "MB", "GB", "TB", "PB")
@@ -107,6 +115,7 @@ environment.filters["rst2html"] = jinja_rst2html
 environment.filters["sha256"] = sha256
 environment.filters["local"] = local
 environment.filters["hbytes"] = hbytes
+environment.filters["rfc822"] = rfc822
 
 
 def render_template(template: str, **kwargs):

@@ -17,6 +17,20 @@
 {%- endif %}
     <meta property="og:locale" content="{{ languages[lang].locale }}">
 
+    <link rel="alternate" type="application/rss+xml"
+          title="{{ title }} - {{ languages[lang].language if languages and lang in languages else lang }}"
+          href="/{{ lang }}/rss">
+{%- if section is defined %}
+    <link rel="alternate" type="application/rss+xml"
+          title="{{ title }} - {{ section.title }}"
+          href="/{{ section.lang }}/{{ section.path }}/rss">
+{%- endif %}
+{%- if topic is defined %}
+    <link rel="alternate" type="application/rss+xml"
+          title="{{ title }} - {{ section.title }} - {{ topic.title }}"
+          href="/{{ section.lang }}/{{ section.path }}/{{ topic.path }}/rss">
+{%- endif %}
+
     <meta name="twitter:card" property="twitter:card" content="summary">
     <!--meta property="twitter:domain" content=""-->
     <meta name="twitter:creator" property="twitter:creator" content="@mcbig_cz">

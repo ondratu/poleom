@@ -12,6 +12,7 @@ from .lib.exceptions import DuplicityError
 from .lib.pager import Pager
 from .lib.post import Post
 from .lib.response import check_etag, create_etag, render_response
+from .lib.rss import RSS_ITEMS, rss_response
 from .lib.section import Section
 from .lib.topic import Topic
 from .lib.user import User
@@ -82,6 +83,26 @@ def create_topic(req, lang: str, section_path: str):
         redirect(uri._replace(fragment="duplicity_topic_title").geturl())
 
     redirect(f"/{lang}/{section_path}/{topic.path}")
+
+
+@app.route("/<lang:lang>/<section_path>/<topic_path>/rss")
+@check_login_cookie
+def topic_rss(req, lang: str, section_path: str, topic_path: str):
+    """Return RSS feed with topic's last posts."""
+    section, topic = find_topic(req.db, lang, section_path, topic_path,
+                                req.user)
+
+    total = Post.count(req.db, topic.id)
+    pager = Pager(offset=max(0, total - RSS_ITEMS), limit=RSS_ITEMS)
+    posts = list(Post.list(req.db, pager, topic_id=topic.id))
+    posts.reverse()
+    for post in posts:
+        post.user = User.get(req.db, post.user_id)
+
+    topic_url = req.construct_url(f"/{lang}/{section_path}/{topic_path}")
+    return rss_response("rss/topic.xml", req,
+                        section=section, topic=topic, posts=posts,
+                        topic_url=topic_url, lang=lang)
 
 
 @app.route("/<lang:lang>/<section_path>/<topic_path>")
