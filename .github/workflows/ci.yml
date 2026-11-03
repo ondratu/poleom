@@ -43,6 +43,9 @@ jobs:
   tests:
     name: Tests (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # to comment the coverage on a pull request
     strategy:
       fail-fast: false
       matrix:
@@ -62,12 +65,36 @@ jobs:
       # fails when the coverage is below `fail_under` in pyproject.toml
       - name: Run tests
         run: python -m pytest
+      # The table is made even when the tests fail on the threshold
+      - name: Make the coverage table
+        if: always() && matrix.python == '3.12'
+        run: |
+          {
+            echo "### Test coverage of poleom/"
+            echo
+            python -m coverage report --format=markdown --fail-under=0
+          } > coverage.md
+          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment the table on the pull request
+        # Not for pushes (there is no pull request) and not for forks (their
+        # token cannot write); the summary of the run has the table anyway.
+        if: >
+          always() && matrix.python == '3.12'
+          && github.event_name == 'pull_request'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh pr comment ${{ github.event.pull_request.number }}
+          --edit-last --create-if-none --body-file coverage.md
       - name: Upload coverage
-        if: matrix.python == '3.12'
+        if: always() && matrix.python == '3.12'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: coverage.xml
+          path: |
+            coverage.xml
+            coverage.md
           retention-days: 30
 
   package:

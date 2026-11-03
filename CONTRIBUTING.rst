@@ -191,7 +191,9 @@ GitHub Actions (``.github/workflows/ci.yml``) runs on every push to
 * ``pre-commit`` - all hooks on all files, including ``pylint`` and
   ``mypy`` with the installed project (the same as ``make check``),
 * ``tests`` - ``pytest`` with the coverage threshold on Python 3.11, 3.12,
-  3.13 and 3.14,
+  3.13 and 3.14; the coverage table is in the summary of the run and, for
+  a pull request from this repository, in a comment which the workflow
+  updates on every push,
 * ``package`` - build of the wheel and the source package, ``twine check``,
   ``tools/check-wheel.sh`` (all templates, static files and SQL schemas are
   in it, no editor backups) and an install into a clean virtual environment.
