@@ -9,7 +9,7 @@ from io import RawIOBase
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 
 from .core import app
-from .mysql import HEX_LEN, DictCursor
+from .mysql import HEX_LEN, DictCursor, as_utc
 
 READ_WRITE_BUFFER = 10_485_760  # 10MiB
 
@@ -65,9 +65,9 @@ class Attachment:
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
-        return Attachment(row["post_id"], row["uploaded"], row["mime_type"],
-                          row["file_name"], row["hexdigest"],
-                          json.loads(row["data"]))
+        return Attachment(row["post_id"], as_utc(row["uploaded"]),
+                          row["mime_type"], row["file_name"],
+                          row["hexdigest"], json.loads(row["data"]))
 
     @staticmethod
     def create(conn: Connection, post_id: int, file: File):

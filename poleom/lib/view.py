@@ -17,6 +17,7 @@ from m2r2 import convert  # type: ignore[import]
 from markupsafe import Markup
 
 from .core import app
+from .mysql import as_utc
 
 RE_MESSAGE = re.compile(r"[<>\w]+:(\d+): \((\w+)/(\d+)\) (.*)", re.U)
 THOUSAND = 1000.0
@@ -91,7 +92,7 @@ def sha256(txt: str):
 
 def local(value: datetime, time_zone: tzfile):
     """Transfer UTC datetime to local timezone."""
-    return value.astimezone(time_zone)
+    return as_utc(value).astimezone(time_zone)
 
 
 def rfc822(value: datetime):

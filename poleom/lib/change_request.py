@@ -1,14 +1,14 @@
 """User change request model."""
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 
 from .core import app
-from .mysql import DB_CONV, DictCursor, enum2str
+from .mysql import DB_CONV, DictCursor, as_utc, enum2str
 from .smtp import Smtp
 from .user import User
 from .view import render_template
@@ -48,11 +48,15 @@ class ChangeRequest:
             "data": self.data,
         }
 
+    def expired(self, ttl: int) -> bool:
+        """Return True if the request is older than `ttl` seconds."""
+        return self.created + timedelta(seconds=ttl) < datetime.now(UTC)
+
     @staticmethod
     def from_row(row):
         """Return entity from DB row."""
-        return ChangeRequest(row["user_id"], row["created"],
-                             row["accepted"], row["hexdigest"],
+        return ChangeRequest(row["user_id"], as_utc(row["created"]),
+                             as_utc(row["accepted"]), row["hexdigest"],
                              ChangeRequest.State(row["state"]),
                              json.loads(row["data"]))
 

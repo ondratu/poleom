@@ -25,6 +25,9 @@ For users
 - Fixed: attempts to unban a user who is not banned or to change a deleted
   user were answered with "501 Not Implemented", now they get the right
   status code.
+- Fixed: the time of the validity of the e-mail links (registration, password
+  reset) and the times of posts were wrong on servers which do not run in
+  the UTC time zone.
 - Fixed typos in the e-mail about the enabled account, in the e-mail about
   the password reset and in the section form.
 

@@ -1,6 +1,6 @@
 """Endpoints for sections."""
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from poorwsgi import state
 from poorwsgi.response import (
@@ -71,7 +71,8 @@ def lang_rss(req: Request, lang: str):
         pager = Pager(limit=RSS_ITEMS, order="last", sort="desc")
         items.extend((section, topic)
                      for topic in Topic.list(req.db, pager, section.id))
-    items.sort(key=lambda pair: pair[1].last or datetime.min, reverse=True)
+    oldest = datetime.min.replace(tzinfo=UTC)
+    items.sort(key=lambda pair: pair[1].last or oldest, reverse=True)
     items = items[:RSS_ITEMS]
 
     lang_url = req.construct_url(f"/{lang}")

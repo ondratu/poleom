@@ -5,7 +5,7 @@ from hashlib import sha256
 
 from MySQLdb.connections import Connection  # type: ignore[import-untyped]
 
-from .mysql import HEX_LEN, DictCursor
+from .mysql import HEX_LEN, DictCursor, as_utc
 from .pager import Pager
 
 
@@ -47,7 +47,8 @@ class Post:
     def from_row(row):
         """Return Post from row."""
         return Post(row["post_id"], row["topic_id"], row["parent"],
-                    row["created"], row["modified"], row["user_id"],
+                    as_utc(row["created"]), as_utc(row["modified"]),
+                    row["user_id"],
                     row["hexdigest"], row["body"])
 
     @staticmethod

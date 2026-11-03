@@ -7,6 +7,7 @@ from time import time
 from urllib.parse import urlencode
 
 from poleom.lib.auth import create_login_cookie
+from poleom.lib.mysql import as_utc
 from poleom.lib.section import Section
 from poleom.lib.sqlite import DictCursor
 from poleom.lib.topic import Topic
@@ -173,8 +174,8 @@ def sqlite_topic_list(conn, pager, section_id):
         for row in cur:
             topic = Topic.from_row(row)
             topic.count = row["count"]
-            topic.last = (datetime.fromisoformat(row["last"])
-                          if row["last"] else None)
+            topic.last = as_utc(datetime.fromisoformat(row["last"])
+                                if row["last"] else None)
             topic.user_name = row["user_name"]
             topics.append(topic)
         cur.execute(
