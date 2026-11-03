@@ -1,20 +1,10 @@
 """Integrity tests for login functionality."""
-import sqlite3
 from unittest.mock import patch
-
-import pytest
 
 from poleom.lib.sqlite import DictCursor
 from poleom.lib.user import User
 
 PASSWORD = "Str0ngPassw0rd"
-
-
-@pytest.fixture(autouse=True)
-def _sqlite_adapters():
-    """Enums are converted to MySQL by DB_CONV, for sqlite register them."""
-    for enum in (User.State, User.Role):
-        sqlite3.register_adapter(enum, lambda item: item.name)
 
 
 @patch("poleom.lib.user.DictCursor", DictCursor)
