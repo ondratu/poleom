@@ -49,7 +49,7 @@ the database from ``docker-mysql.sh``. To change the settings (``app_smtp``
 for example), copy the file and run ``uwsgi --ini`` with your copy.
 
 Or run the simple gevent server, with the ``app_*`` variables exported in
-the environment (see ``README.rst`` for the list):
+the environment (see `README.rst`_ for the list):
 
 .. code-block:: sh
 
@@ -57,7 +57,7 @@ the environment (see ``README.rst`` for the list):
 
 The forum is then available at http://localhost:8000/. To log in as
 the default administrator ``root@localhost``, set its password with
-``poleom-passwd``, see "First administrator" in ``README.rst``.
+``poleom-passwd``, see "First administrator" in `README.rst`_.
 
 Code changes
 ============
@@ -91,13 +91,13 @@ is a plain SQL file:
 
 * ``poleom/mysql/migrations/<version>.sql`` - the SQL which upgrades a database
   of the previous release to this ``<version>`` (the one in ``Unreleased`` of
-  the ``ChangeLog.rst``, for example ``0.2.0.sql``). Start the file with a
+  the `ChangeLog.rst`_, for example ``0.2.0.sql``). Start the file with a
   comment of what it does. When the version already has a file, add the new
   statements to it, so one version is one file,
 * the administrators run the files of all newer versions in the order of
-  versions, each once (see "Upgrade" in ``README.rst``), so a migration never
+  versions, each once (see "Upgrade" in `README.rst`_), so a migration never
   edits an older file and does not depend on data created by a later one,
-* the ``ChangeLog.rst`` item for administrators names the file instead of
+* the `ChangeLog.rst`_ item for administrators names the file instead of
   repeating the SQL,
 * test the file against a real MySQL (``docker-mysql.sh``): load ``init.sql``
   of the previous release, run the migration and compare the schema with
@@ -108,16 +108,16 @@ Authentication plugins
 
 A new authentication backend (SSO, Google, ...) is a class derived from
 ``AuthBackend`` in ``poleom/lib/auth_backend.py``. The interface, the mapping
-of the user and an example are in ``docs/auth-backends.rst``; read it first.
+of the user and an example are in `docs/auth-backends.rst`_; read it first.
 Test it as ``tests/integrity/test_endpoint_external_auth.py`` does, without
 the network, and document the options of the plugin (``app_*``) in
-``README.rst``.
+`README.rst`_.
 
 Configuration and documentation
 -------------------------------
 
 A new or changed ``app_*`` option, installation step or command updates
-``README.rst`` in the same commit. The documentation is written in
+`README.rst`_ in the same commit. The documentation is written in
 reStructuredText and checked by the ``rst-linter`` pre-commit hook.
 
 Tests
@@ -205,7 +205,7 @@ in ``poleom/main.py`` whatever the order of the collected tests is.
 ChangeLog
 =========
 
-``ChangeLog.rst`` is written for the people who run and use the forum, not
+`ChangeLog.rst`_ is written for the people who run and use the forum, not
 for developers. A change gets an entry in the same commit when somebody
 outside the code can notice it. Refactoring, tests, CI and comments do not.
 Write it in plain English, one short item, without file or function names.
@@ -234,7 +234,7 @@ administrators have to upgrade for. A schema change also updates both
 Releasing
 =========
 
-#. Rename ``Unreleased`` in ``ChangeLog.rst`` to the version and the date
+#. Rename ``Unreleased`` in `ChangeLog.rst`_ to the version and the date
    (``0.2.0 - 2026-11-20``) and make sure it says "No database migration"
    or describes the migration.
 #. Set ``__version__`` in ``poleom/__init__.py`` to the version
@@ -281,4 +281,9 @@ Git commits
   ``pre-commit`` runs the other checks
   on every commit.
 * A commit with a change visible to users or administrators contains its
-  ``ChangeLog.rst`` entry.
+  `ChangeLog.rst`_ entry.
+
+
+.. _README.rst: README.rst
+.. _ChangeLog.rst: ChangeLog.rst
+.. _docs/auth-backends.rst: docs/auth-backends.rst
