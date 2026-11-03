@@ -1,7 +1,7 @@
 [project]
 name = "Poleom"
 description = "Simple Forum web application"
-readme = "README.md"
+readme = "README.rst"
 
 authors = [
   {name = "Ondřej Tůma", email = "mcbig@zeropage.cz"},
