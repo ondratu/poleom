@@ -67,6 +67,12 @@ The module ``poleom/lib/auth_backend.py`` defines:
         def logout(self, req) -> Response:
             """Destroy the session and return the response (a redirect)."""
 
+``identity()``, ``login_url()`` and ``logout()`` are abstract, the others
+have defaults (``init_app`` does nothing, ``signup_url`` and ``profile_url``
+return ``None``). The backend which keeps the users itself (only
+``LocalAuthBackend``) overrides ``load_user(req)``, which returns the local
+``User`` and by default maps the ``Identity`` as described above.
+
 ``identity()`` is called on every request which needs the user, so it has to
 be fast. Reading a cookie is fine; a call of a remote service should be cached
 by the backend (for example for a few minutes). It must never raise, a failure
@@ -140,6 +146,6 @@ of an existing database is the SQL in the ``ChangeLog.rst``.
 Tests
 =====
 
-Test a backend without the network. ``tests/integrity/test_auth_backend.py``
-shows a fake backend; the ``client`` fixture runs the whole application with
-it.
+Test a backend without the network.
+``tests/integrity/test_endpoint_external_auth.py`` shows a fake backend;
+the ``client`` fixture runs the whole application with it.
