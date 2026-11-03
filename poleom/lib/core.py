@@ -10,6 +10,7 @@ from MySQLdb.connections import Connection
 from poorwsgi import Application, request
 
 from .. import __name__ as appname
+from .auth_backend import AuthBackend, LocalAuthBackend, load_backend
 from .mysql import DB_CONV, Cursor
 from .smtp import Smtp
 
@@ -98,6 +99,8 @@ class App(Application):
         if password:
             self.db_conf["password"] = password
 
+        self.auth_backend: AuthBackend = LocalAuthBackend()
+
         self.secret_key = options.get("secret_key")
         if not self.secret_key:
             error = "Not secret_key set!"
@@ -119,6 +122,8 @@ class App(Application):
 
 
 app = App()
+app.auth_backend = load_backend(app.get_options().get("auth_backend"))
+app.auth_backend.init_app(app)
 app.set_filter("lang", r"[a-z]{2,3}", str)
 app.document_root = path.join(str(files("poleom")), "assets")
 
