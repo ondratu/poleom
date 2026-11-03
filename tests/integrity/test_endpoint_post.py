@@ -44,6 +44,12 @@ class TestCreatePost:
         assert created.body == "Answer"
         assert result.headers["Location"].endswith("#" + created.hexdigest)
 
+    def test_create_without_upload_field(self, client, db, topic, author):
+        result = client.login(author).post(TOPIC_URL, form={"body": "Text"})
+
+        assert result.status == 302
+        assert Post.count(db, topic.id) == 1
+
     def test_create_with_parent(self, client, db, post, author):
         client.login(author).post(
             TOPIC_URL, form={"body": "Reply", "parent": post.hexdigest},

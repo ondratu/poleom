@@ -1,6 +1,8 @@
 """Unit tests for the SQLite wrapper used by tests."""
 import pytest
+from MySQLdb import IntegrityError
 
+from poleom.lib.exceptions import MYSQL_DUPLICITY
 from poleom.lib.sqlite import Connection, DictCursor
 
 
@@ -82,3 +84,22 @@ def test_now_function(conn):
     with conn.cursor() as cur:
         cur.execute("SELECT NOW()")
         assert cur.fetchone()[0].startswith("20")
+
+
+def test_unique_violation_is_mysql_duplicity(conn):
+    with conn.cursor() as cur:
+        cur.execute("CREATE TABLE u (id INTEGER UNIQUE)")
+        cur.execute("INSERT INTO u VALUES (1)")
+        with pytest.raises(IntegrityError) as err:
+            cur.execute("INSERT INTO u VALUES (1)")
+
+    assert err.value.args[0] == MYSQL_DUPLICITY
+
+
+def test_other_integrity_error_has_another_code(conn):
+    with conn.cursor() as cur:
+        cur.execute("CREATE TABLE n (id INTEGER NOT NULL)")
+        with pytest.raises(IntegrityError) as err:
+            cur.execute("INSERT INTO n VALUES (NULL)")
+
+    assert err.value.args[0] != MYSQL_DUPLICITY
