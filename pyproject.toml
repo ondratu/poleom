@@ -35,11 +35,31 @@ dependencies = [
   "simplejson",
 ]
 
+[tool.setuptools.dynamic]
+version = {attr = "poleom.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["poleom*"]
+
 [tool.setuptools]
-packages = ["poleom"]
+# Only `package-data` below, no stale files from egg-info/SOURCES.txt.
+include-package-data = false
 
 [tool.setuptools.package-data]
-"poleom" = ["py.typed"]
+# Whitelist by extension, so editor backups (*~) do not get into the package.
+"poleom" = [
+  "py.typed",
+  "assets/**/*.css",
+  "assets/**/*.js",
+  "assets/**/*.txt",
+  "assets/webfonts/*.ttf",
+  "assets/webfonts/*.woff2",
+  "templates/**/*.html",
+  "templates/**/*.jinja",
+  "templates/**/*.xml",
+  "mysql/*.sql",
+  "sqlite/*.sql",
+]
 
 [project.urls]
 "Repository" = "https://github.com/ondratu/poleom"
@@ -72,6 +92,15 @@ test = [
 
 server = [
   "uwsgi"
+]
+
+dev = [
+  "pre-commit",
+]
+
+build = [
+  "build",
+  "twine",
 ]
 
 [tool.isort]
