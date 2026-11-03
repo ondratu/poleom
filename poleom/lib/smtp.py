@@ -101,9 +101,8 @@ class Smtp:
         logger.info("SMTP: Sub:%s, From:%s, To:%s", msg["Subject"],
                     msg["From"], msg["To"])
 
+        smtp = self._class(self.host, self.port, timeout=self.timeout)
         try:
-            smtp = self._class(self.host, self.port, timeout=self.timeout)
-
             if self.user:
                 smtp.login(self.user, self.passwd)
             smtp.sendmail(msg["From"], msg["To"], msg.as_string())
@@ -145,9 +144,8 @@ class Smtp:
         logger.info("SMTP: Sub:%s, From:%s, To:%s", msg["Subject"],
                     msg["From"], msg["To"])
 
+        smtp = self._class(self.host, self.port, timeout=self.timeout)
         try:
-            smtp = self._class(self.host, self.port, timeout=self.timeout)
-
             if self.user:
                 smtp.login(self.user, self.passwd)
             smtp.sendmail(msg["From"], msg["To"], msg.as_string())
