@@ -15,6 +15,10 @@ jobs:
   ci:
     name: Checks and tests
     uses: ./.github/workflows/ci.yml
+    # a called workflow can not have more permissions than the caller gives
+    permissions:
+      contents: read
+      pull-requests: write
 
   release:
     name: Attach the packages to the release
