@@ -104,7 +104,7 @@ Tests
     .venv/bin/python -m pytest tests/integrity/test_login.py   # one file
 
 Pytest is configured in ``pyproject.toml``. Every run prints the coverage
-report with missing lines and writes ``coverage.xml``; doctests of
+report (percentages only) and writes ``coverage.xml``; doctests of
 the modules are run as well.
 
 Test strategy
@@ -117,9 +117,13 @@ The tests are a pyramid, the same as in the other projects:
   network: models (``from_row``, ``to_dict``, roles), the pager, the SMTP
   data source name, the HTTP cache helpers, the converters. They are the
   most numerous. One file tests one module of ``poleom/lib``,
-* ``tests/integrity/`` - tests of the handlers and the models with
-  the in-memory SQLite database (see below),
-* endpoints should have an integrity test as well.
+* ``tests/integrity/`` - tests of the models with the in-memory SQLite
+  database (see below) and ``test_endpoint_*.py`` - tests of the endpoints:
+  the ``client`` fixture (``tests/helpers.py``) makes a whole WSGI request,
+  the routing, the authorization, the models and the templates are real, only
+  the database is SQLite and the emails are collected by the ``outbox``
+  fixture. A logged in user is made by ``client.login(user)``,
+* every endpoint should have an integrity test.
 
 Rules for tests:
 
@@ -127,8 +131,7 @@ Rules for tests:
 * the coverage of the new or changed code should be at least 80 %,
 * the overall coverage must not go down: ``fail_under`` in the
   ``[tool.coverage.report]`` section of ``pyproject.toml`` fails the tests
-  below it. The coverage is still low, raise the number whenever it grows,
-  never lower it,
+  below it. Raise the number whenever the coverage grows, never lower it,
 * the production code must not import anything from ``tests``.
 
 Database in tests
@@ -147,8 +150,15 @@ it with the SQLite one:
     class TestLogin:
         ...
 
-SQL which SQLite cannot execute (e.g. ``NOW()``) can not be tested this way,
-test such code against a real MySQL by hand.
+SQL which SQLite cannot execute (the ``UNION`` in ``Section.list``, the
+``Topic.list`` query) can not be tested this way. The endpoints use
+replacements of these two methods from ``tests/helpers.py`` and the unit
+tests check the processing of their rows with a mocked cursor. Test such SQL
+against a real MySQL by hand.
+
+``conftest.py`` in the root of the repository sets the ``app_*`` variables and
+imports the application, so the routes are registered in the same order as
+in ``poleom/main.py`` whatever the order of the collected tests is.
 
 ChangeLog
 =========

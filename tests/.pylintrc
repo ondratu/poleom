@@ -1,6 +1,9 @@
 [MESSAGES CONTROL]
 disable =
     missing-function-docstring,
+    missing-class-docstring,
+    unused-argument,
+    too-many-locals,
     too-few-public-methods,
     redefined-outer-name,
     protected-access

@@ -4,16 +4,24 @@ from contextlib import ExitStack
 from datetime import datetime
 from importlib.resources import files
 from os.path import join
-from sqlite3 import connect, register_adapter
+from sqlite3 import (
+    PARSE_DECLTYPES,
+    connect,
+    register_adapter,
+    register_converter,
+)
 from unittest.mock import patch
 
 import pytest
 
 from poleom.lib.change_request import ChangeRequest
+from poleom.lib.core import app
 from poleom.lib.section import Section
 from poleom.lib.sqlite import Connection, Cursor, DictCursor
 from poleom.lib.topic import Topic
 from poleom.lib.user import User
+from poleom.main import application
+from tests.helpers import Client, sqlite_section_list, sqlite_topic_list
 
 SQL_INIT = join(str(files("poleom")), "sqlite", "init.sql")
 
@@ -25,13 +33,18 @@ def _sqlite_adapters():
                  ChangeRequest.State):
         register_adapter(enum, lambda item: item.name)
     register_adapter(dict, json.dumps)  # JSON columns
-    # the default adapter is deprecated
-    register_adapter(datetime, lambda value: value.isoformat(" "))
+    # the default adapter and converter are deprecated
+    register_converter("timestamp",
+                       lambda raw: datetime.fromisoformat(raw.decode()))
+    # MySQL stores the wall clock without the time zone, models use UTC
+    register_adapter(datetime,
+                     lambda value: value.replace(tzinfo=None).isoformat(" "))
 
 
 @pytest.fixture
 def db():
-    conn = connect(":memory:", factory=Connection)
+    conn = connect(":memory:", factory=Connection,
+                   detect_types=PARSE_DECLTYPES)
     with conn.cursor(Cursor) as cur:
         with open(SQL_INIT, encoding="utf-8") as sql:
             cur.executescript(sql.read())
@@ -61,3 +74,28 @@ def make_user(db):
         user.update(db)
         return user
     return create
+
+
+@pytest.fixture
+def client(db):
+    """WSGI client of the application, which uses the SQLite database."""
+    with patch("poleom.lib.core.connect", return_value=db), \
+            patch.object(Section, "list", sqlite_section_list), \
+            patch.object(Topic, "list", sqlite_topic_list):
+        yield Client(application)
+
+
+@pytest.fixture(autouse=True)
+def _fast_password_hash():
+    """The low number of rounds makes the tests faster."""
+    with patch.object(User, "HASH_ROUNDS", 4):
+        yield
+
+
+@pytest.fixture
+def outbox():
+    """Do not send emails, collect them as ``(subject, recipient, body)``."""
+    sent = []
+    with patch.object(app.smtp, "send_email_txt",
+                      side_effect=lambda *args: sent.append(args)):
+        yield sent

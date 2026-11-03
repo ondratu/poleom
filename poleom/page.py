@@ -56,8 +56,21 @@ def preview(req):
                         errors=parse_system_messages(errors))
 
 
-@app.http_state(state.HTTP_CONFLICT)
+@app.http_state(state.HTTP_CONFLICT, state.METHOD_ALL)
 def http_conflict(_):
     """Simple http conflict"""
     # TODO: better smarter error result
     return TextResponse("Entity exist yet", status_code=state.HTTP_CONFLICT)
+
+
+@app.http_state(state.HTTP_GONE, state.METHOD_ALL)
+def http_gone(_):
+    """Archived section does not accept new topics."""
+    return TextResponse("Archived", status_code=state.HTTP_GONE)
+
+
+@app.http_state(state.HTTP_PRECONDITION_REQUIRED, state.METHOD_ALL)
+def http_precondition_required(_):
+    """The user is not in the state which the request needs."""
+    return TextResponse("Precondition required",
+                        status_code=state.HTTP_PRECONDITION_REQUIRED)

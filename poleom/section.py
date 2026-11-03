@@ -236,6 +236,9 @@ def section_update(req, section_id: int = 0):
 
     languages = Language.map(req.db)
     section, errors = bind_section(section_id, req.form, languages)
+    if "lang" in errors:
+        # the form is rendered in the language of the section
+        section.lang = app.default_lang
 
     if not errors:
         try:
