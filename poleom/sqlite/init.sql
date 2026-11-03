@@ -1,3 +1,9 @@
+CREATE TABLE meta (
+    name VARCHAR(40) NOT NULL PRIMARY KEY,
+    value VARCHAR(255) NOT NULL
+);
+INSERT INTO meta (name, value) VALUES ('schema_version', '0.2.0');
+
 CREATE TABLE languages (
     lang CHAR(3) NOT NULL UNIQUE, -- ISO_639-1 / ISO_639-2
     locale CHAR(6) NOT NULL, -- en_US

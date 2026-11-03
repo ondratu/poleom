@@ -1,3 +1,11 @@
+CREATE TABLE meta (
+    name VARCHAR(40) NOT NULL,
+    value VARCHAR(255) NOT NULL,
+
+    PRIMARY KEY name_pk (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+INSERT INTO meta (name, value) VALUES ("schema_version", "0.2.0");
+
 CREATE TABLE languages (
     lang CHAR(3) NOT NULL, -- ISO_639-1 / ISO_639-2
     locale CHAR(6) NOT NULL, -- en_US
