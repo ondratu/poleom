@@ -64,3 +64,21 @@ def test_rollback_on_error(conn):
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM t")
         assert cur.fetchone() == (3,)
+
+
+def test_dict_cursor_fetchmany_default_size(conn):
+    with conn.cursor(DictCursor) as cur:
+        cur.execute("SELECT * FROM t ORDER BY id")
+        assert [row["id"] for row in cur.fetchmany()] == [1]
+
+
+def test_mysql_sql_mode_is_ignored(conn):
+    with conn.cursor() as cur:
+        cur.execute("SET sql_mode=(SELECT REPLACE(@@sql_mode,'A',''))")
+        assert cur.fetchone() is None
+
+
+def test_now_function(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT NOW()")
+        assert cur.fetchone()[0].startswith("20")

@@ -2,6 +2,7 @@
 
 import re
 import sqlite3
+from datetime import UTC, datetime
 
 # MySQL style ``%(name)s`` placeholder used by models
 PYFORMAT = re.compile(r"%\((\w+)\)s")
@@ -11,7 +12,12 @@ class Cursor(sqlite3.Cursor):
     """Add context manager protocol methods to cursor."""
 
     def execute(self, sql, parameters=()):
-        """Execute SQL, MySQL ``%(name)s`` placeholders are converted."""
+        """Execute SQL, MySQL ``%(name)s`` placeholders are converted.
+
+        MySQL only ``SET sql_mode`` is ignored.
+        """
+        if sql.lstrip().startswith("SET sql_mode"):
+            return self
         return super().execute(PYFORMAT.sub(r":\1", sql), parameters)
 
     def __enter__(self):
@@ -40,14 +46,19 @@ class DictCursor(Cursor):
         rows = super().fetchall()
         return [sqlite3.Row(self, row) for row in rows]
 
-    def fetchmany(self, size=Cursor.arraysize):
-        """Return rows as `sqlite3.Row`."""
-        rows = super().fetchmany(size)
+    def fetchmany(self, size=None):
+        """Return rows as `sqlite3.Row`, `arraysize` rows by default."""
+        rows = super().fetchmany(self.arraysize if size is None else size)
         return [sqlite3.Row(self, row) for row in rows]
 
 
 class Connection(sqlite3.Connection):
     """Connection which returns context manager `Cursor` by default."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # MySQL function used by the models
+        self.create_function("NOW", 0, lambda: datetime.now(UTC).isoformat())
 
     # the delegation is not useless, it changes the default factory
     # pylint: disable-next=useless-parent-delegation
