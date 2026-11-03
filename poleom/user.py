@@ -327,7 +327,7 @@ def post_change_request(req, hexdigest: str):
             errors["password_again"] = FormError.MISMATCH
 
         if errors:
-            return render_response("user/reset-password-request.html",
+            return render_response("user/change-request.html",
                                    req,
                                    change_request=change_request,
                                    errors=errors)

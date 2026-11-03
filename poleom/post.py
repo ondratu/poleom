@@ -12,6 +12,14 @@ from .lib.response import render_response
 from .topic import ITEMS_ON_PAGE, find_topic, topic_page
 
 
+def uploaded_fields(form):
+    """Return list of uploaded fields; one field is not a list in form."""
+    if "attachments" not in form:
+        return []
+    fields = form["attachments"]
+    return fields if isinstance(fields, list) else [fields]
+
+
 @app.route("/<lang:lang>/<section_path>/<topic_path>",
            method=state.METHOD_POST)
 @auth_user()
@@ -41,7 +49,7 @@ def create_post(req, lang: str, section_path: str, topic_path: str):
     pager.bind(req.args)
 
     post = Post.create(req.db, topic.id, req.user.id, body, parent)
-    for field in req.form["attachments"]:
+    for field in uploaded_fields(req.form):
         if field.filename:
             file = File(field.file, field.filename, field.type)
             Attachment.create(req.db, post.id, file)
@@ -94,7 +102,7 @@ def update_post(req, lang: str, section_path: str, topic_path: str,
     section, topic = find_topic(req.db, lang, section_path, topic_path,
                                 req.user)
 
-    for field in req.form["attachments"]:
+    for field in uploaded_fields(req.form):
         if field.filename:
             file = File(field.file, field.filename, field.type)
             Attachment.create(req.db, post.id, file)

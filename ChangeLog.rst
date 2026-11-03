@@ -17,6 +17,14 @@ For users
 - Fixed: HTML written in a post, a signature or a section description is no
   longer rendered as a part of the page, it is shown as text. The
   reStructuredText directives ``raw`` and ``include`` do not work any more.
+- Fixed: a post with exactly one attached file was saved without it.
+- Fixed: a wrong new password on the reset password page showed the form for
+  the e-mail again, now it shows the password form with the error.
+- Fixed: a section form sent with an unknown language ended with an error
+  page.
+- Fixed: attempts to unban a user who is not banned or to change a deleted
+  user were answered with "501 Not Implemented", now they get the right
+  status code.
 - Fixed typos in the e-mail about the enabled account, in the e-mail about
   the password reset and in the section form.
 

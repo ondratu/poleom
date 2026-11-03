@@ -59,7 +59,6 @@ def rst2html(src, system_messages=False):
     err_stream = StringIO()
     parts = publish_parts(source=src,
                           writer=writer,
-                          writer_name="htm",
                           settings_overrides={
                               "warning_stream": err_stream,
                               "no_system_messages": not system_messages,
