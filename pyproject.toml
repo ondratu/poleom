@@ -138,8 +138,19 @@ lint.ignore = [
     "S101", # use assert
     "SIM103", # i need readability
     "TRY003", # Avoid specifying long messages outside the exception class
-    "SLF001", # Private member accessed - checkd by pylint
+    "SLF001", # Private member accessed - checked by pylint
 ]
+
+[tool.pylint.main]
+# unfinished, remove when poleom/wizard.py is done
+ignore = ["wizard.py"]
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = ["fixme", "too-few-public-methods"]
+
+[tool.mypy]
+# unfinished, remove when poleom/wizard.py is done
+exclude = ["poleom/wizard\\.py"]
+
+[tool.codespell]
+skip = "*.min.js,*.min.css,*~,*.orig,./.git,./.venv,./build,./dist,./attachments,./poleom/assets/webfonts,./poleom/assets/js/jquery-*,./uv.lock,./LICENSE,./todo.txt"

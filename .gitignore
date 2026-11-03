@@ -1,0 +1,20 @@
+# virtualenv, caches and build output
+.venv/
+__pycache__/
+*.egg-info/
+/build/
+/dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# local configuration and data
+.env
+/attachments/
+/etc/
+
+# editor backups
+*~
+*.orig

@@ -1,41 +1,79 @@
 ---
+# Third party and generated files are not checked.
+exclude: >-
+  (?x)^(
+    poleom/assets/webfonts/.*
+    | poleom/assets/js/jquery-.*
+    | .*\.min\.(js|css)
+    | uv\.lock
+  )$
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.6.1'
+
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
+    rev: 3.11.1
     hooks:
-    - id: ruff
+      - id: editorconfig-checker
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+
+  - repo: https://github.com/codespell-project/codespell
+    # Configuration for codespell is in pyproject.toml
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      # includes the flake8-bandit rules (S), no need for bandit
+      - id: ruff
+
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+    rev: 7.5.0
     hooks:
       - id: flake8
+
   - repo: https://github.com/Lucas-C/pre-commit-hooks-markup
     rev: v1.0.1
     hooks:
       - id: rst-linter
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-bandit
-    rev: v1.0.6
-    hooks:
-      - id: python-bandit-vulnerability-check
-        args: [--skip, "B101", --recursive, poorwsgi, examples]
-  - repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v3.0.0a5
+
+  # pylint and mypy need the dependencies of the project, so they run from
+  # the activated virtualenv (`make install`) and always check everything.
+  - repo: local
     hooks:
       - id: pylint
-        # call pylint direct from .venv virtualenv
-        entry: .venv/bin/pylint
-        # accept virtualenv (pre-commit installed in venv)
+        name: pylint
+        entry: pylint poleom
         language: system
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.11.1'
-    hooks:
+        types: [python]
+        pass_filenames: false
+      - id: pylint-tests
+        name: pylint (tests)
+        entry: pylint --rcfile=tests/.pylintrc tests
+        language: system
+        types: [python]
+        pass_filenames: false
       - id: mypy
-        # call mypy direct from .venv virtualenv
-        entry: .venv/bin/mypy
-        # accept virtualenv (pre-commit installed in venv)
+        name: mypy
+        entry: mypy poleom
         language: system
+        types: [python]
+        pass_filenames: false
