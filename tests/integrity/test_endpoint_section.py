@@ -166,6 +166,21 @@ class TestSectionAdministration:
         assert created is not None
         assert created.description == "Fresh"
 
+    def test_create_duplicity(self, client, moderator, general):
+        result = client.login(moderator).post("/sections", form={
+            "title": "General", "lang": "en", "description": "Same",
+            "state": "OPEN"})
+
+        assert result.status == 200
+        assert result.text.count('class="error"') >= 2
+
+    def test_create_without_state(self, client, db, moderator):
+        result = client.login(moderator).post("/sections", form={
+            "title": "News", "lang": "en", "description": "Fresh"})
+
+        assert result.status == 200
+        assert Section.find(db, "en", "news") is None
+
     def test_create_with_errors(self, client, db, moderator):
         result = client.login(moderator).post("/sections", form={
             "title": "", "lang": "xx", "description": "", "state": "bad"})
@@ -248,6 +263,15 @@ class TestSectionUsers:
             "users": [{"user_id": member.id, "name": "member"}]}
         assert client.delete(f"{url}/{member.id}").status == 204
         assert not SectionUser.user_in(db, general.id, member.id)
+
+    def test_add_twice_is_conflict(self, client, moderator, general,
+                                   make_user):
+        member = make_user("member")
+        url = f"/sections/{general.id}/users/{member.id}"
+        client.login(moderator)
+
+        assert client.post(url).status == 204
+        assert client.post(url).status == 409
 
     def test_missing_section(self, client, moderator):
         client.login(moderator)

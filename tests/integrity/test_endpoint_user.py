@@ -117,8 +117,16 @@ class TestSignup:
 
         assert client.get(f"/c/{token(outbox)}").status == 410
 
+    def test_duplicate_email(self, client, member, outbox):
+        result = client.post("/signup", form=signup_form(email=member.email))
+
+        assert result.status == 200
+        assert 'class="error"' in result.text
+        assert not outbox
+
     @pytest.mark.parametrize("overrides", [
         {"name": ""},
+        {"password": "", "password_again": ""},
         {"email": ""},
         {"email": "not-an-email"},
         {"password": "short", "password_again": "short"},
@@ -231,6 +239,21 @@ class TestAccount:
         assert result.status == 302
         assert User.find(db, "new@example.com", NEW_PASSWORD) is not None
         assert outbox[-1][1] == "new@example.com"
+
+    def test_change_only_email_keeps_old_one_in_request(
+            self, client, db, member, outbox):
+        client.login(member).post("/user/account", form={
+            "name": "member", "email": "new@example.com"})
+
+        assert outbox
+        assert User.find(db, "new@example.com") is not None
+
+    def test_change_only_password_notifies(self, client, member, outbox):
+        client.login(member).post("/user/account", form={
+            "name": "member", "email": member.email,
+            "password": NEW_PASSWORD, "password_again": NEW_PASSWORD})
+
+        assert outbox[-1][1] == member.email
 
     @pytest.mark.parametrize("form", [
         {"name": "", "email": "member@example.com"},

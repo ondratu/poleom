@@ -4,6 +4,10 @@ import re
 import sqlite3
 from datetime import UTC, datetime
 
+from MySQLdb import IntegrityError  # type: ignore[import-untyped]
+
+from .exceptions import MYSQL_DUPLICITY
+
 # MySQL style ``%(name)s`` placeholder used by models
 PYFORMAT = re.compile(r"%\((\w+)\)s")
 
@@ -14,11 +18,17 @@ class Cursor(sqlite3.Cursor):
     def execute(self, sql, parameters=()):
         """Execute SQL, MySQL ``%(name)s`` placeholders are converted.
 
-        MySQL only ``SET sql_mode`` is ignored.
+        MySQL only ``SET sql_mode`` is ignored. The unique constraint error
+        is raised as the MySQL duplicate entry error.
         """
         if sql.lstrip().startswith("SET sql_mode"):
             return self
-        return super().execute(PYFORMAT.sub(r":\1", sql), parameters)
+        try:
+            return super().execute(PYFORMAT.sub(r":\1", sql), parameters)
+        except sqlite3.IntegrityError as err:
+            # the models expect the MySQL error of the duplicate entry
+            code = MYSQL_DUPLICITY if "UNIQUE" in str(err) else 1451
+            raise IntegrityError(code, str(err)) from err
 
     def __enter__(self):
         return self

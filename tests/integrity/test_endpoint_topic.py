@@ -67,6 +67,14 @@ class TestCreateTopic:
         assert client.login(moderator).post(
             "/en/general", form=form).status == 302
 
+    def test_duplicity(self, client, topic, make_user):
+        result = client.login(make_user()).post(
+            "/en/general", form={"title": "Hello topic", "body": "B"},
+            headers=REFERER)
+
+        assert result.status == 302
+        assert result.headers["Location"].endswith("#duplicity_topic_title")
+
     @pytest.mark.parametrize(("form", "fragment"), [
         ({"title": "", "body": "B"}, "empty_topic_title"),
         ({"title": "T", "body": ""}, "empty_topic_body"),
