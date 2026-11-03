@@ -1,7 +1,9 @@
 """MySQL wrapper."""
 import json
 import logging
+from datetime import UTC, datetime
 from enum import Enum
+from typing import overload
 
 from MySQLdb import cursors  # type: ignore[import-untyped]
 from MySQLdb._mysql import string_literal  # type: ignore[import-untyped]
@@ -11,6 +13,27 @@ from .. import __name__ as appname
 
 LOGGER = logging.getLogger(appname)
 HEX_LEN = 12  # Hexdigest column length
+
+
+@overload
+def as_utc(value: datetime) -> datetime: ...
+
+
+@overload
+def as_utc(value: None) -> None: ...
+
+
+def as_utc(value):
+    """Return datetime from the database as the aware one in UTC.
+
+    The database stores the UTC wall clock without the time zone, so MySQL
+    returns naive datetime objects.
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def dict2str(obj: dict, _):

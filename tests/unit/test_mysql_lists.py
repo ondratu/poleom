@@ -3,6 +3,7 @@
 SQLite cannot run these queries, so the cursor is mocked and the tests
 check the processing of the rows.
 """
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from poleom.lib.pager import Pager
@@ -41,7 +42,7 @@ def test_section_list_without_user():
 def test_topic_list():
     row = {"topic_id": 1, "section_id": 2, "title": "Topic",
            "path": "topic", "state": "OPEN", "pinned": 0, "count": 4,
-           "last": "2026-01-01", "U.name": "alice"}
+           "last": datetime(2026, 1, 1), "U.name": "alice"}
     conn, _ = conn_with([row], {"count": 9})
     pager = Pager()
 
@@ -50,6 +51,7 @@ def test_topic_list():
     assert [(t.title, t.count, t.user_name) for t in topics] == [
         ("Topic", 4, "alice")]
     assert pager.total == 9
+    assert topics[0].last == datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def test_topic_list_order():

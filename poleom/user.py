@@ -1,5 +1,4 @@
 """User / Account / Auth routes."""
-from datetime import datetime, timedelta
 from urllib import parse
 
 from poorwsgi import abort, redirect, state
@@ -276,9 +275,8 @@ def accept_change_request(req: Request, hexdigest: str):
     change_request = ChangeRequest.get(req.db, hexdigest)
     if not change_request:
         abort(state.HTTP_NOT_FOUND)  # TODO: Request Not Found
-    expiration = change_request.created + timedelta(
-        seconds=app.change_request_ttl)
-    if change_request.accepted or expiration < datetime.now():
+    if (change_request.accepted
+            or change_request.expired(app.change_request_ttl)):
         abort(state.HTTP_GONE)  # TODO: Request Is Gone
 
     # Accept registration
@@ -311,9 +309,8 @@ def post_change_request(req, hexdigest: str):
     change_request = ChangeRequest.get(req.db, hexdigest)
     if not change_request:
         abort(state.HTTP_NOT_FOUND)
-    expiration = change_request.created + timedelta(
-        seconds=app.change_request_ttl)
-    if change_request.accepted or expiration < datetime.now():
+    if (change_request.accepted
+            or change_request.expired(app.change_request_ttl)):
         abort(state.HTTP_GONE)
 
     if change_request.state == ChangeRequest.State.PASSWORD:

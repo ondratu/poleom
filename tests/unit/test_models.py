@@ -1,5 +1,5 @@
 """Unit tests for the Section, Topic, Post, Language and ChangeRequest."""
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from typing import ClassVar
 
@@ -138,3 +138,25 @@ class TestAttachment:
     def test_path_is_sharded_by_hexdigest(self, monkeypatch):
         monkeypatch.setattr("poleom.lib.attachment.app.attachments", "/data")
         assert Attachment.from_row(self.ROW).path == "/data/012/345"
+
+
+class TestChangeRequestExpiration:
+    """Time in the database is UTC, the expiration must not depend on TZ."""
+
+    @staticmethod
+    def make(age):
+        return ChangeRequest(1, datetime.now(UTC) - age, None, "x",
+                             ChangeRequest.State.PASSWORD, {})
+
+    def test_not_expired(self):
+        assert not self.make(timedelta(hours=1)).expired(7200)
+
+    def test_expired(self):
+        assert self.make(timedelta(hours=1)).expired(1800)
+
+    def test_row_time_is_utc(self):
+        row = {"user_id": 1, "created": datetime(2026, 1, 1),
+               "accepted": None, "hexdigest": "x", "state": "PASSWORD",
+               "data": "{}"}
+
+        assert ChangeRequest.from_row(row).created.tzinfo is UTC

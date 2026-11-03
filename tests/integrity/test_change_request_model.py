@@ -1,4 +1,5 @@
 """Integrity tests of the ChangeRequest model with SQLite database."""
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -63,3 +64,14 @@ def test_send_email_with_unknown_state(db, user):
 
     with pytest.raises(RuntimeError):
         request.send_email(MagicMock(), user)
+
+
+def test_times_are_utc(db, user):
+    request = ChangeRequest.create(
+        db, user.id, ChangeRequest.State.PASSWORD, {})
+    request.accept(db)
+
+    stored = ChangeRequest.get(db, request.hexdigest)
+    assert stored.created.utcoffset() == timedelta(0)
+    assert stored.accepted.utcoffset() == timedelta(0)
+    assert not stored.expired(60)

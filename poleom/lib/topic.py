@@ -8,7 +8,7 @@ from MySQLdb import IntegrityError
 from MySQLdb.connections import Connection
 
 from .exceptions import MYSQL_DUPLICITY, DuplicityError
-from .mysql import DB_CONV, DictCursor, enum2str
+from .mysql import DB_CONV, DictCursor, as_utc, enum2str
 from .pager import Pager
 
 
@@ -148,7 +148,7 @@ class Topic:
             for row in cur:
                 topic = Topic.from_row(row)
                 topic.count = row["count"]
-                topic.last = row["last"]
+                topic.last = as_utc(row["last"])
                 topic.user_name = row["U.name"]
                 yield topic
 
