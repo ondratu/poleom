@@ -47,11 +47,6 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13", "3.14"]
-    env:
-      # The application reads its configuration when it is imported
-      app_db: mysql://user:password@localhost/poleom
-      app_secret_key: test
-      app_smtp: smtp://localhost/root@localhost
     steps:
       - name: Checkout
         uses: actions/checkout@v7
