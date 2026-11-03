@@ -127,11 +127,26 @@ The tests are a pyramid, the same as in the other projects:
 
 Rules for tests:
 
-* every new feature and every bug fix comes with a test,
-* the coverage of the new or changed code should be at least 80 %,
-* the overall coverage must not go down: ``fail_under`` in the
-  ``[tool.coverage.report]`` section of ``pyproject.toml`` fails the tests
-  below it. Raise the number whenever the coverage grows, never lower it,
+* every new feature and every bug fix comes with a test, in the same pull
+  request. A bug is fixed by a test which fails without the fix,
+* the coverage is measured with branches. The total coverage and the coverage
+  of **every file** must be at least **95 %**, the ideal is 100 %. The total
+  is checked by ``fail_under`` in ``[tool.coverage.report]`` of
+  ``pyproject.toml``, the files by ``tools/check-coverage.py``, which
+  ``make test`` and CI run after ``pytest``. Do not lower the limits, add
+  tests,
+* unfinished code and code which the tests cannot import is omitted in
+  ``[tool.coverage.run]``, never leave such a file in the measured code just
+  to lower the average. Do not hide code with ``# pragma: no cover`` when it
+  can be tested,
+* a test must not depend on the order of the tests, on the time zone of the
+  machine, on the network or on a running database,
+* a test of an endpoint goes through the whole application (``client``), see
+  above. A model is tested with the SQLite database, only what SQLite cannot
+  do is mocked,
+* time is UTC everywhere: the database stores UTC and the models return
+  aware ``datetime`` objects (``as_utc()``); use ``datetime.now(UTC)``, never
+  ``datetime.now()``,
 * the production code must not import anything from ``tests``.
 
 Database in tests
@@ -140,8 +155,10 @@ Database in tests
 Tests need no running MySQL. The ``db`` fixture
 (``tests/integrity/conftest.py``) creates an in-memory SQLite database from
 ``poleom/sqlite/init.sql``. ``poleom/lib/sqlite.py`` makes it usable with the
-models: the cursor translates MySQL ``%(name)s`` placeholders and supports
-the ``with`` statement. A test of a model which uses ``DictCursor`` patches
+models: the cursor translates MySQL ``%(name)s`` placeholders, supports
+the ``with`` statement, raises the MySQL duplicate entry error for
+a violated unique constraint, and ignores ``SET sql_mode``. A test of
+a model which uses ``DictCursor`` patches
 it with the SQLite one:
 
 .. code-block:: python
@@ -214,8 +231,9 @@ GitHub Actions (``.github/workflows/ci.yml``) runs on every push to
 
 * ``pre-commit`` - all hooks on all files, including ``pylint`` and
   ``mypy`` with the installed project (the same as ``make check``),
-* ``tests`` - ``pytest`` with the coverage threshold on Python 3.11, 3.12,
-  3.13 and 3.14; the coverage table is in the summary of the run and, for
+* ``tests`` - ``pytest`` with the coverage limits (the total and every file,
+  see "Rules for tests") on Python 3.11, 3.12, 3.13 and 3.14; the coverage
+  table is in the summary of the run and, for
   a pull request from this repository, in a comment which the workflow
   updates on every push,
 * ``package`` - build of the wheel and the source package, ``twine check``,
@@ -234,7 +252,8 @@ Git commits
   (``Fix invalid same_site value for login session cookies``).
 * Describe what changes in behaviour (new, fixed, changed), not how it is
   implemented. Bullet points are enough for details.
-* Run ``make test`` before committing; ``pre-commit`` runs the other checks
+* Run ``make test`` (tests and the coverage limits) before committing;
+  ``pre-commit`` runs the other checks
   on every commit.
 * A commit with a change visible to users or administrators contains its
   ``ChangeLog.rst`` entry.

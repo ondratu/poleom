@@ -65,6 +65,9 @@ jobs:
       # fails when the coverage is below `fail_under` in pyproject.toml
       - name: Run tests
         run: python -m pytest
+
+      - name: Check the coverage of every file
+        run: python tools/check-coverage.py
       # The table is made even when the tests fail on the threshold
       - name: Make the coverage table
         if: always() && matrix.python == '3.12'
