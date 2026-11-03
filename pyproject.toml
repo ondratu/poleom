@@ -201,7 +201,9 @@ branch = true
 
 [tool.coverage.report]
 # A ratchet: raise the number when the coverage grows, never lower it.
-fail_under = 38
+# Python versions count the statements differently (37.0 % on 3.14, 38.3 % on
+# 3.12), the number is the lowest of them.
+fail_under = 37
 
 [tool.mypy]
 # unfinished, remove when poleom/wizard.py is done
