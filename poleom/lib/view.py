@@ -65,6 +65,9 @@ def rst2html(src, system_messages=False):
                               "no_system_messages": not system_messages,
                               "initial_header_level": 3,
                               "halt_level": 100,
+                              # user input: no raw HTML, no reading of files
+                              "raw_enabled": False,
+                              "file_insertion_enabled": False,
                           })
     body = parts["body"]
     if parts["title"]:
@@ -73,7 +76,8 @@ def rst2html(src, system_messages=False):
         body += parts["html_line"] + \
             parts["html_footnotes"] + parts["html_citations"]
     err_stream.seek(0)
-    return Markup(body), err_stream.read()
+    # docutils escapes the text and raw/include directives are disabled above
+    return Markup(body), err_stream.read()  # noqa: S704
 
 
 def jinja_rst2html(src):
@@ -119,7 +123,7 @@ environment.filters["rfc822"] = rfc822
 
 
 def render_template(template: str, **kwargs):
-    """Return generated ouptut fromjinja template."""
+    """Return generated output fromjinja template."""
     if app.debug:
         env = environment.overlay()
         env.add_extension(TemplateInfoExtension)

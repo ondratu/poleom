@@ -58,9 +58,11 @@ class TestTopicRss:
 
         dom = parseString(xml)  # raises ExpatError if not well-formed XML
         assert len(dom.getElementsByTagName("item")) == 1
-        # post body must be HTML-escaped, so the script tag stays inert
+        # raw HTML of the post is disabled and the body is escaped in the
+        # feed, so no script tag survives, not even after XML unescaping
         assert "<script>" not in xml
-        assert "&lt;script&gt;" in xml
+        description = dom.getElementsByTagName("description")[-1]
+        assert "<script>" not in description.firstChild.data
         assert "abc123" in xml
 
 
