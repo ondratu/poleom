@@ -59,6 +59,29 @@ The forum is then available at http://localhost:8000/. To log in as
 the default administrator ``root@localhost``, set its password with
 ``poleomctl user:set-password``, see "First administrator" in `README.rst`_.
 
+Administration command
+----------------------
+
+``make install`` installs the ``poleomctl`` command into ``.venv/bin``, the
+same as for an administrator (see "Administration" in `README.rst`_). Use
+the ini file of the development server to give it the database:
+
+.. code-block:: sh
+
+    .venv/bin/poleomctl app:version
+    .venv/bin/poleomctl --ini example/etc/uwsgi.ini db:status
+    .venv/bin/poleomctl --ini example/etc/uwsgi.ini user:set-password \
+        --new-email you@example.com
+
+``python -m poleom.ctl`` is the same command and works without the
+installed script, from the checkout. The script is made when the package is
+installed, so after you pull a version which has a new one, or when
+``.venv/bin/poleomctl`` is missing, run ``make install`` again. Without
+``--ini`` the database is taken from ``--db DSN`` or from the ``app_db``
+variable, as for ``python -m poleom``. ``db:backup`` and ``db:upgrade`` need
+``mysqldump`` on the machine where ``poleomctl`` runs (not in the container);
+install the MariaDB client there.
+
 Code changes
 ============
 
