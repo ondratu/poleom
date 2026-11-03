@@ -1,0 +1,109 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  # The release workflow runs the same checks before it builds the release
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # gevent_mysqldb builds mysqlclient, which needs the client library
+  APT_DEPS: build-essential pkg-config libmariadb-dev
+
+jobs:
+  pre-commit:
+    name: Pre-commit (format, spelling, ruff, pylint, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y $APT_DEPS
+      # pylint and mypy need the project and its dependencies installed
+      - name: Install the project and the tools
+        run: python -m pip install -e ".[lint,typecheck,test,dev]"
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  tests:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    env:
+      # The application reads its configuration when it is imported
+      app_db: mysql://user:password@localhost/poleom
+      app_secret_key: test
+      app_smtp: smtp://localhost/root@localhost
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y $APT_DEPS
+      - name: Install the project
+        run: python -m pip install -e ".[test]"
+      # fails when the coverage is below `fail_under` in pyproject.toml
+      - name: Run tests
+        run: python -m pytest
+      - name: Upload coverage
+        if: matrix.python == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 30
+
+  package:
+    name: Build and check the wheel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y $APT_DEPS
+      - name: Build
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Check the content of the wheel
+        run: tools/check-wheel.sh dist/*.whl
+      - name: Install the wheel into a clean virtual environment
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install dist/*.whl
+          "$RUNNER_TEMP/venv/bin/poleom-passwd" --help
+      - name: Upload the package
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
