@@ -143,6 +143,9 @@ prefix. When uWSGI is used, they are set with ``env =`` in the ini file.
     URLs of the terms of use
 ``app_change_request_ttl`` (``86400``)
     validity of e-mail links in seconds
+``app_auth_backend`` (the accounts of the forum)
+    ``module:Class`` of an authentication plugin, see
+    ``docs/auth-backends.rst``
 ``app_debug`` (``False``)
     ``True`` turns on debug mode
 
