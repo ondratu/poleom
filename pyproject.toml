@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.scripts]
-poleom-passwd = "poleom.passwd_bcrypt:main"
+poleomctl = "poleom.ctl:run"
 
 [tool.setuptools.dynamic]
 version = {attr = "poleom.__version__"}
