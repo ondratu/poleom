@@ -5,6 +5,7 @@
     <h2>User Account</h2>
 
     <form class="form signup" method="post" action="/user/account?lang={{ lang }}">
+      {% if auth.local -%}
       <label class="{{ "error" if "name" in errors }}">
         <span>Name:</span>
         <input name="name" value="{{ user.name or "" }}" maxlength="255"
@@ -23,6 +24,10 @@
       {% if "email" in errors %}
       <div class="error">{{ errors.email.value }}</div>
       {% endif -%}
+      {% elif auth.profile_url -%}
+      <div class="info">The name, the e-mail and the password are changed
+        in <a href="{{ auth.profile_url }}">your account</a>.</div>
+      {% endif -%}
 
       <label for="signature-editor">
         <span>Signature:</span></label>
@@ -30,6 +35,7 @@
                   id="signature-editor"
                   rows="5">{{ user.signature or ""}}</textarea>
 
+      {% if auth.local -%}
       <div class="hr"/></div>
       <div class="info">Password will change after valid fill next fields.</div>
 
@@ -49,6 +55,7 @@
       </label>
       {% if "password_again" in errors %}
       <div class="error">{{ errors.password_again.value }}</div>
+      {% endif -%}
       {% endif -%}
 
       <div class="buttons">

@@ -13,6 +13,7 @@ from .lib.auth import (
     auth_user,
     check_login_cookie,
     create_login_cookie,
+    local_login_only,
 )
 from .lib.change_request import ChangeRequest
 from .lib.core import Request, app
@@ -24,6 +25,7 @@ from .lib.user import User
 
 
 @app.route("/login")
+@local_login_only
 @check_login_cookie
 def login_page(req):
     """Return log in page."""
@@ -35,6 +37,7 @@ def login_page(req):
 
 
 @app.route("/login", method=state.METHOD_POST)
+@local_login_only
 def login(req):
     """Create login cookie."""
     email = req.form.get("email")
@@ -68,6 +71,7 @@ def logout(req):
 
 
 @app.route("/signup")
+@local_login_only
 @check_login_cookie
 def signup_page(req):
     """Return log in page."""
@@ -77,6 +81,7 @@ def signup_page(req):
 
 
 @app.route("/signup-check")
+@local_login_only
 def signup_check(req):
     """Test check page only"""
     lang = req.args.get("lang", app.default_lang)
@@ -87,6 +92,7 @@ def signup_check(req):
 
 
 @app.route("/signup", method=state.METHOD_POST)
+@local_login_only
 def signup(req):
     """Create account."""
     lang = req.args.get("lang", app.default_lang)
@@ -167,6 +173,21 @@ def user_account(req):
     return render_response("user/account.html", req, user=req.user)
 
 
+def _account_form(req):
+    """Return values of the account form.
+
+    When the auth backend is the master of the name, the e-mail and
+    the password, the form values of them are ignored.
+    """
+    signature = req.form.get("signature", "").strip() or None
+    if not app.auth_backend.allows_local_login:
+        return req.user.name, req.user.email, signature, None, None
+    return (req.form.get("name", "").strip(),
+            req.form.get("email", "").strip(), signature,
+            req.form.get("password", "").strip() or None,
+            req.form.get("password_again", "").strip() or None)
+
+
 @app.route("/user/account", method=state.METHOD_POST)
 @auth_user()
 def user_account_set(req):
@@ -174,11 +195,7 @@ def user_account_set(req):
     lang = req.args.get("lang", app.default_lang)
     req.lang = lang
 
-    name = req.form.get("name", "").strip()
-    email = req.form.get("email", "").strip()
-    signature = req.form.get("signature", "").strip() or None
-    password = req.form.get("password", "").strip() or None
-    password_again = req.form.get("password_again", "").strip() or None
+    name, email, signature, password, password_again = _account_form(req)
 
     errors = {}
     if not name:
@@ -227,6 +244,7 @@ def user_account_set(req):
 
 
 @app.route("/user/reset-password", method=state.METHOD_GET_POST)
+@local_login_only
 def reset_password_request(req: Request):
     """Return user account form."""
     lang = req.args.get("lang", app.default_lang)
@@ -263,6 +281,7 @@ def reset_password_request(req: Request):
 
 
 @app.route("/c/<hexdigest:hex>")
+@local_login_only
 def accept_change_request(req: Request, hexdigest: str):
     """Accept change request / change request form."""
     lang = req.args.get("lang", app.default_lang)

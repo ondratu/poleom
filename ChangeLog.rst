@@ -14,6 +14,9 @@ Unreleased
 For users
 ---------
 
+- A forum can use an external service to log the users in (see the
+  administrators part). Members then change their name, e-mail and password
+  there, only the signature stays in the account settings.
 - Fixed: HTML written in a post, a signature or a section description is no
   longer rendered as a part of the page, it is shown as text. The
   reStructuredText directives ``raw`` and ``include`` do not work any more.
@@ -46,6 +49,10 @@ For administrators
 - The default of ``app_theme`` is the directory of the installed package, it
   was ``./poleom`` in the current directory. Set ``app_theme`` explicitly if
   you run a modified copy of the templates.
+- New option ``app_auth_backend`` selects an authentication plugin, see
+  ``docs/auth-backends.rst``. Without it nothing changes. With a plugin the
+  registration, the login by the password, the reset of the password and
+  the change of the e-mail of the forum are turned off.
 - Database migration: the table ``users`` gets the column ``auth_sub`` for
   the users of an external authentication plugin and the password may be
   ``NULL``. Run it once, the forum works the same as before:

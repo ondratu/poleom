@@ -4,7 +4,7 @@ from hashlib import sha256
 from poorwsgi.headers import Headers, http_to_time, time_to_http
 from poorwsgi.response import HTTPException, NotModifiedResponse
 
-from .core import Request
+from .core import Request, app
 from .settings import Language
 from .view import render_template
 
@@ -41,8 +41,16 @@ def render_response(template: str, req: Request, **kwargs):
     * me from req.user
     * lang from section.lang or req.lang
     * languages from DB if is not set
+    * auth with the links of the auth backend
     """
     kwargs["me"] = req.user
+    backend = app.auth_backend
+    kwargs["auth"] = {
+        "local": backend.allows_local_login,
+        "login_url": backend.login_url(req, req.path),
+        "signup_url": backend.signup_url(req, req.path),
+        "profile_url": backend.profile_url(req),
+    }
     lang = kwargs["section"].lang if "section" in kwargs else req.lang
     kwargs["lang"] = lang
     if "languages" not in kwargs:

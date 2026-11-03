@@ -88,6 +88,8 @@ def test_hbytes(value, result):
 
 CONTEXT = {
     "me": None,
+    "auth": {"local": True, "login_url": "/login", "signup_url": None,
+             "profile_url": None},
     "lang": "en",
     "languages": {"en": Language("en", "en_US", "English", True)},
 }
