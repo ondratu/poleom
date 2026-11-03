@@ -13,6 +13,7 @@ ROW = {
     "state": "ACTIVE",
     "role": "MODERATOR",
     "data": '{"theme": "dark"}',
+    "auth_sub": "42",
 }
 
 
@@ -50,6 +51,7 @@ def test_from_row():
     assert user.state is User.State.ACTIVE
     assert user.role is User.Role.MODERATOR
     assert user.data == {"theme": "dark"}
+    assert user.auth_sub == "42"
 
 
 def test_from_row_unknown_state():

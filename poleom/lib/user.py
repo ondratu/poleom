@@ -23,7 +23,7 @@ CHECK_OPT3 = r"[\w\W]{15,}$"
 
 
 @dataclass
-class User:
+class User:  # pylint: disable=too-many-instance-attributes  # DB record
     """Section record model class.
 
     >>> user = User(0, "", "", None, User.State.ACTIVE)
@@ -54,6 +54,7 @@ class User:
     state: State
     role: Role = Role.MEMBER
     data: dict = field(default_factory=dict)
+    auth_sub: str | None = None
 
     @property
     def id(self):
@@ -73,6 +74,7 @@ class User:
             "state": self.state,
             "role": self.role,
             "data": self.data,
+            "auth_sub": self.auth_sub,
         }
 
     def check_role(self, role: Role):
@@ -128,7 +130,8 @@ class User:
         """Return entity from DB row."""
         return User(row["user_id"], row["name"], row["email"],
                     row["signature"], User.State(row["state"]),
-                    User.Role(row["role"]), json.loads(row["data"]))
+                    User.Role(row["role"]), json.loads(row["data"]),
+                    row["auth_sub"])
 
     @staticmethod
     def create(conn: Connection,
@@ -185,6 +188,8 @@ class User:
             row = cur.fetchone()
             if not row:
                 return None
+            if password and not row["password"]:
+                return None  # no password, only the auth backend logs in
             try:
                 if password and not bcrypt.checkpw(
                         sha3_512(password.encode("utf-8")).digest(),
@@ -194,6 +199,56 @@ class User:
                 # Invalid salt means no or corrupted password in DB
                 return None
             return User.from_row(row)
+
+    @staticmethod
+    def from_identity(conn: Connection, identity):
+        """Return the user of the auth backend identity.
+
+        The user is created at the first login. The name, the e-mail and
+        the language are kept in sync with the identity, the state and
+        the role are local. Raise `DuplicityError` when the e-mail is used
+        by another user.
+        """
+        with conn.cursor(DictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE auth_sub=%(sub)s",
+                        {"sub": identity.subject})
+            row = cur.fetchone()
+        if not row:
+            return User._create_external(conn, identity)
+
+        user = User.from_row(row)
+        data = dict(user.data, lang=identity.lang) if identity.lang \
+            else user.data
+        if (user.name, user.email, user.data) != (identity.name,
+                                                  identity.email, data):
+            user.name, user.email, user.data = (identity.name,
+                                                identity.email, data)
+            user.update(conn)
+        return user
+
+    @staticmethod
+    def _create_external(conn: Connection, identity):
+        """Create the user without password for the auth backend identity."""
+        data = {"lang": identity.lang} if identity.lang else {}
+        user = User(0, identity.name, identity.email, None, User.State.ACTIVE,
+                    User.Role.MEMBER, data, identity.subject)
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO users
+                        (name, email, state, role, data, auth_sub)
+                    VALUES
+                        (%(name)s, %(email)s, %(state)s, %(role)s, %(data)s,
+                         %(auth_sub)s)
+                    """, user.to_dict())
+                user._id = cur.lastrowid  # pylint: disable=protected-access
+                conn.commit()
+                return user
+        except IntegrityError as err:
+            if err.args[0] == MYSQL_DUPLICITY:
+                raise DuplicityError from err
+            raise
 
     def delete(self, conn: Connection):
         """Mark user as delete and anonymize his data."""
@@ -213,7 +268,7 @@ class User:
 
     def update(self, conn: Connection, password: str | None = None):
         """Update existing user in db."""
-        cols = ["name", "email", "signature", "state", "role"]
+        cols = ["name", "email", "signature", "state", "role", "data"]
         vals = self.to_dict()
         if password:
             cols.append("password")
