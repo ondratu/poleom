@@ -1,6 +1,5 @@
 """Application and configuration init."""
 import logging
-import re
 from importlib.resources import files
 from os import W_OK, access, path
 
@@ -11,6 +10,7 @@ from poorwsgi import Application, request
 
 from .. import __name__ as appname
 from .auth_backend import AuthBackend, LocalAuthBackend, load_backend
+from .dsn import parse_dsn
 from .mysql import DB_CONV, Cursor
 from .smtp import Smtp
 
@@ -73,31 +73,7 @@ class App(Application):
         self.terms["en"] = options.get("terms_en", "/not-found?lang=en")
         self.terms["cs"] = options.get("terms_cs", "/not-found?lang=cs")
 
-        # Data Source Name regular expression for mysql connection
-        re_dsn = re.compile(
-            r"""\w+://            # driver
-                                  (?P<user>\w+)
-                                  (:(?P<password>\w+))?
-                                  (@(?P<host>[\w\.]+))?
-                                  (:(?P<port>[0-9]+))?
-                                  /(?P<db>\w+)
-                                  (::(?P<charset>\w+))?
-                               """, re.X)
-
-        match = re_dsn.match(options.get("db", ""))
-        if not match:
-            msg = "Not valid data source name for MySQL in `app_db`!"
-            raise ValueError(msg)
-        self.db_conf = {
-            "host": match.group("host") or "localhost",
-            "port": int(match.group("port") or 3306),
-            "database": match.group("db"),
-            "charset": match.group("charset") or "utf8mb4",
-            "user": match.group("user"),
-        }
-        password = match.group("password")
-        if password:
-            self.db_conf["password"] = password
+        self.db_conf = parse_dsn(options.get("db", ""))
 
         self.auth_backend: AuthBackend = LocalAuthBackend()
 
