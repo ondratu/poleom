@@ -70,12 +70,12 @@ class Smtp:
         self._class = SMTP_SSL if self.protocol == "smtps" else SMTP
 
     def __str__(self):
-        """Return Data Source Name of set values."""
-        return f"{self.protocol}://%s%s%s%s:%d/%s::%s" % \
-            (self.protocol, self.user or "", self.passwd or "",
-             "@" if self.user or self.passwd else "",
-             self.host, self.port,
-             self.sender, self.charset)
+        """Return Data Source Name of set values, without the password."""
+        credentials = ""
+        if self.user or self.passwd:
+            credentials = f"{self.user or ''}:***@"
+        return (f"{self.protocol}://{credentials}{self.host}:{self.port}/"
+                f"{self.sender}::{self.charset}")
 
     def send_email_txt(self, subject, recipient, body, **kwargs):
         """Send email as text/plain content type.

@@ -107,6 +107,20 @@ Pytest is configured in ``pyproject.toml``. Every run prints the coverage
 report with missing lines and writes ``coverage.xml``; doctests of
 the modules are run as well.
 
+Test strategy
+-------------
+
+The tests are a pyramid, the same as in the other projects:
+
+* simple functions are covered by doctests in the module,
+* ``tests/unit/`` - unit tests of the code without the database or the
+  network: models (``from_row``, ``to_dict``, roles), the pager, the SMTP
+  data source name, the HTTP cache helpers, the converters. They are the
+  most numerous. One file tests one module of ``poleom/lib``,
+* ``tests/integrity/`` - tests of the handlers and the models with
+  the in-memory SQLite database (see below),
+* endpoints should have an integrity test as well.
+
 Rules for tests:
 
 * every new feature and every bug fix comes with a test,
