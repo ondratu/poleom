@@ -35,6 +35,9 @@ dependencies = [
   "simplejson",
 ]
 
+[project.scripts]
+poleom-passwd = "poleom.passwd_bcrypt:main"
+
 [tool.setuptools.dynamic]
 version = {attr = "poleom.__version__"}
 
