@@ -46,9 +46,25 @@ def old_db(db):
     return OldConnection(":memory:")
 
 
+class Open:
+    """Connection which the tests can ask after the command closed it."""
+
+    closed = False
+
+    def __init__(self, conn):
+        self.conn = conn
+
+    def __getattr__(self, name):
+        return getattr(self.conn, name)
+
+    def close(self):
+        self.closed = True
+
+
 @pytest.fixture
 def ctl_db(db):
-    with patch("poleom.ctl.connect", return_value=db):
+    with patch("poleom.ctl.connect", return_value=Open(db)) as mock:
+        db.mock = mock
         yield db
 
 
@@ -68,7 +84,8 @@ def test_version_of_the_database_without_table(old_db):
 
 def test_version_of_the_database_without_row(db):
     db.execute("DELETE FROM meta")
-    assert ctl.db_version(db) == "0.1.0"
+    with pytest.raises(ctl.CtlError, match="no schema_version"):
+        ctl.db_version(db)
 
 
 def test_other_database_errors_are_not_hidden():
@@ -126,6 +143,40 @@ def test_db_version(ctl_db):
         0, [ctl.code_schema_version()])
 
 
+def test_connection_gets_arguments_and_is_closed(ctl_db):
+    with patch("poleom.ctl.connect", return_value=Open(ctl_db)) as mock:
+        args = ctl.parser().parse_args(["--db", "mysql://u:p@h:3307/d",
+                                        "db:version"])
+        with ctl.database(args) as conn:
+            pass
+    mock.assert_called_once_with(host="h", port=3307, database="d",
+                                 charset="utf8mb4", user="u", password="p")
+    assert conn.closed
+
+
+def test_connection_is_closed_after_an_error(ctl_db):
+    args = ctl.parser().parse_args(["--db", "mysql://u/d", "db:version"])
+    link = Open(ctl_db)
+    with patch("poleom.ctl.connect", return_value=link), \
+            pytest.raises(RuntimeError), ctl.database(args):
+        raise RuntimeError
+    assert link.closed
+
+
+def test_db_status_newer_database(ctl_db):
+    ctl_db.execute("UPDATE meta SET value='9.0.0'")
+    code, lines = run("--db", "mysql://u/d", "db:status")
+    assert code == 1
+    assert lines[-1] == "the database is newer than the code"
+
+
+def test_failed_migration_says_to_restore(old_db, tmp_path):
+    (tmp_path / "0.2.0.sql").write_text("CREATE TABLE a (x INT);\nBROKEN;\n")
+    with pytest.raises(ctl.CtlError, match=r"statement 2.*backup"):
+        ctl.upgrade(old_db, tmp_path)
+    assert ctl.db_version(old_db) == "0.1.0"
+
+
 def test_db_status_up_to_date(ctl_db):
     code, lines = run("--db", "mysql://u/d", "db:status")
     assert code == 0
@@ -133,7 +184,7 @@ def test_db_status_up_to_date(ctl_db):
 
 
 def test_db_status_pending(old_db):
-    with patch("poleom.ctl.connect", return_value=old_db):
+    with patch("poleom.ctl.connect", return_value=Open(old_db)):
         code, lines = run("--db", "mysql://u/d", "db:status")
     assert code == 1
     assert "database: 0.1.0" in lines
@@ -141,7 +192,7 @@ def test_db_status_pending(old_db):
 
 
 def test_db_upgrade_makes_backup_first(old_db, migrations, tmp_path):
-    with patch("poleom.ctl.connect", return_value=old_db), \
+    with patch("poleom.ctl.connect", return_value=Open(old_db)), \
             patch("poleom.ctl.MIGRATIONS", migrations), \
             patch("poleom.ctl.backup") as dump:
         code, lines = run("--db", "mysql://u/d", "db:upgrade",
@@ -154,7 +205,7 @@ def test_db_upgrade_makes_backup_first(old_db, migrations, tmp_path):
 
 
 def test_db_upgrade_without_backup(old_db, migrations):
-    with patch("poleom.ctl.connect", return_value=old_db), \
+    with patch("poleom.ctl.connect", return_value=Open(old_db)), \
             patch("poleom.ctl.MIGRATIONS", migrations), \
             patch("poleom.ctl.backup") as dump:
         code, lines = run("--db", "mysql://u/d", "db:upgrade", "--no-backup")
@@ -171,7 +222,7 @@ def test_db_upgrade_nothing_to_do(ctl_db):
 
 
 def test_failed_backup_stops_the_upgrade(old_db):
-    with patch("poleom.ctl.connect", return_value=old_db), \
+    with patch("poleom.ctl.connect", return_value=Open(old_db)), \
             patch("poleom.ctl.backup", side_effect=ctl.CtlError("no dump")):
         code, lines = run("--db", "mysql://u/d", "db:upgrade")
     assert code == 2
@@ -210,3 +261,15 @@ def test_set_password_of_unknown_user(ctl_db):
                           "--email", "nobody@example.com", "--rounds", "4")
     assert code == 2
     assert lines == ["poleomctl: No user with the e-mail nobody@example.com."]
+
+
+def test_set_password_to_used_email(ctl_db):
+    ctl_db.execute(
+        "INSERT INTO users (name, email, state, role, data) "
+        "VALUES ('a', 'used@example.com', 'ACTIVE', 'MEMBER', '{}')")
+    with patch("poleom.ctl.getpass", return_value="x"):
+        code, lines = run("--db", "mysql://u/d", "user:set-password",
+                          "--new-email", "used@example.com", "--rounds", "4")
+    assert code == 2
+    assert lines == [
+        "poleomctl: The e-mail used@example.com is used already."]

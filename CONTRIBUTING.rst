@@ -94,9 +94,11 @@ is a plain SQL file, run by ``poleomctl db:upgrade`` (``poleom/ctl.py``):
   the `ChangeLog.rst`_, for example ``0.2.0.sql``). Start the file with a
   comment of what it does. When the version already has a file, add the new
   statements to it, so one version is one file,
-* a statement ends with ``;`` at the end of a line and the file has no ``;``
-  inside strings, the command splits the file by that. Comments start with
-  ``--`` on their own line,
+* a statement ends with ``;`` at the end of a line (a ``-- comment`` after
+  it is allowed) and the file has no ``;`` inside strings, the command splits
+  the file by that. Comments start with ``--``. MySQL commits DDL at once, so
+  a failed migration leaves the database changed partly and the administrator
+  restores the backup; keep a file small and its statements few,
 * the database stores the version of its schema in the table ``meta``
   (``schema_version``). The command runs the files newer than that, in the
   order of versions, each once, and writes the version after each file. So

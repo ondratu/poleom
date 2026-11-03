@@ -3,10 +3,12 @@
 Commands are grouped like in ``occ`` of Nextcloud: ``app:*`` about the code,
 ``db:*`` about the database and ``user:*`` about the accounts.
 """
+import os
 import re
 import subprocess
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
+from contextlib import contextmanager
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha3_512
@@ -16,7 +18,7 @@ from os import environ
 from pathlib import Path
 
 from bcrypt import gensalt, hashpw
-from MySQLdb import ProgrammingError, connect
+from MySQLdb import IntegrityError, ProgrammingError, connect
 
 from . import __version__
 from .lib.dsn import parse_dsn
@@ -25,6 +27,8 @@ MIGRATIONS = files("poleom").joinpath("mysql", "migrations")
 BASE_VERSION = "0.1.0"  # the release without the version in the database
 ROOT = "root@localhost"
 NO_TABLE = 1146  # MySQL error: the table does not exist
+# a comment after a statement, a line with a string is left as it is
+COMMENT = re.compile(r"^([^'\"]*?);\s+--.*$")
 ENV_LINE = re.compile(r"^\s*env\s*=\s*(\w+)=(.*?)\s*$")
 
 
@@ -65,7 +69,7 @@ def read_ini(path: str) -> dict[str, str]:
     for line in text.splitlines():
         match = ENV_LINE.match(line)
         if match:
-            variables[match.group(1)] = match.group(2)
+            variables[match.group(1)] = match.group(2).strip("'\"")
     return variables
 
 
@@ -85,6 +89,16 @@ def db_conf(dsn: str | None, ini: str | None) -> dict:
         raise CtlError(str(err)) from err
 
 
+@contextmanager
+def database(args):
+    """Connect to the database given by the arguments, close it at the end."""
+    conn = connect(**db_conf(args.db, args.ini))
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 # schema version
 
 def db_version(conn) -> str:
@@ -97,7 +111,10 @@ def db_version(conn) -> str:
                 raise
             return BASE_VERSION  # databases of 0.1.0 have no table
         row = cur.fetchone()
-    return row[0] if row else BASE_VERSION
+    if not row:
+        msg = "The table meta has no schema_version, restore the database."
+        raise CtlError(msg)
+    return row[0]
 
 
 def migrations(
@@ -123,7 +140,7 @@ def pending(conn, path: Traversable | None = None):
 
 def statements(sql: str) -> list[str]:
     """Split a migration to statements, they end with ``;`` at a line end."""
-    lines = (line for line in sql.splitlines()
+    lines = (COMMENT.sub(r"\1;", line) for line in sql.splitlines()
              if line.strip() and not line.lstrip().startswith("--"))
     result: list[str] = []
     current: list[str] = []
@@ -142,8 +159,16 @@ def upgrade(conn, path: Traversable | None = None) -> list[str]:
     done = []
     for version, item in pending(conn, path):
         with conn.cursor() as cur:
-            for statement in statements(item.read_text(encoding="utf-8")):
-                cur.execute(statement)
+            for number, statement in enumerate(
+                    statements(item.read_text(encoding="utf-8")), 1):
+                try:
+                    cur.execute(statement)
+                except Exception as err:
+                    # DDL is committed by MySQL, the migration is not atomic
+                    msg = (f"The migration {version} failed in the statement "
+                           f"{number}: {err}. The database may be changed "
+                           "partly, restore it from the backup.")
+                    raise CtlError(msg) from err
             cur.execute("REPLACE INTO meta (name, value) "
                         "VALUES ('schema_version', %(version)s)",
                         {"version": version})
@@ -162,6 +187,8 @@ def backup(conf: dict, target: Path) -> None:
     # the password is not in the list of processes
     env = {**environ, "MYSQL_PWD": conf.get("password", "")}
     try:
+        # the dump has the hashes of passwords, only the owner reads it
+        os.close(os.open(target, os.O_WRONLY | os.O_CREAT, 0o600))
         subprocess.run(command, env=env, check=True)  # noqa: S603
     except (OSError, subprocess.CalledProcessError) as err:
         target.unlink(missing_ok=True)
@@ -201,18 +228,21 @@ def cmd_app_version(args, out) -> int:
 
 def cmd_db_version(args, out) -> int:
     """Print the version of the database schema."""
-    conn = connect(db_conf(args.db, args.ini))
-    out(db_version(conn))
+    with database(args) as conn:
+        out(db_version(conn))
     return 0
 
 
 def cmd_db_status(args, out) -> int:
     """Compare the database schema with the code, exit 1 if they differ."""
-    conn = connect(db_conf(args.db, args.ini))
-    current = db_version(conn)
+    with database(args) as conn:
+        current = db_version(conn)
+        waiting = [version for version, _ in pending(conn)]
     out(f"code: {__version__}")
     out(f"database: {current}")
-    waiting = [version for version, _ in pending(conn)]
+    if release(current) > release(code_schema_version()):
+        out("the database is newer than the code")
+        return 1
     if waiting:
         out("pending migrations: " + ", ".join(waiting))
         out("run: poleomctl db:upgrade")
@@ -233,17 +263,18 @@ def cmd_db_backup(args, out) -> int:
 def cmd_db_upgrade(args, out) -> int:
     """Back up the database and run the pending migrations."""
     conf = db_conf(args.db, args.ini)
-    conn = connect(conf)
-    waiting = pending(conn)
-    if not waiting:
-        out("the database is up to date")
-        return 0
-    if not args.no_backup:
-        target = backup_name(conf, args.backup_dir)
-        backup(conf, target)
-        out(f"backup: {target}")
-    for version in upgrade(conn):
-        out(f"upgraded to {version}")
+    with database(args) as conn:
+        if not pending(conn):
+            out("the database is up to date")
+            return 0
+        # no open transaction, it would hold a lock against the dump
+        conn.rollback()
+        if not args.no_backup:
+            target = backup_name(conf, args.backup_dir)
+            backup(conf, target)
+            out(f"backup: {target}")
+        for version in upgrade(conn):
+            out(f"upgraded to {version}")
     return 0
 
 
@@ -261,20 +292,35 @@ def cmd_user_password_sql(args, out) -> int:
 
 def cmd_user_set_password(args, out) -> int:
     """Set the password of a user, ``root@localhost`` by default."""
-    conn = connect(db_conf(args.db, args.ini))
     hashed = password_hash(read_password(args), args.rounds)
-    with conn.cursor() as cur:
-        cur.execute("UPDATE users SET password=%(password)s, "
-                    "email=%(new)s WHERE email=%(email)s",
-                    {"password": hashed, "email": args.email,
-                     "new": args.new_email or args.email})
+    with database(args) as conn, conn.cursor() as cur:
+        try:
+            cur.execute("UPDATE users SET password=%(password)s, "
+                        "email=%(new)s WHERE email=%(email)s",
+                        {"password": hashed, "email": args.email,
+                         "new": args.new_email or args.email})
+        except IntegrityError as err:
+            msg = f"The e-mail {args.new_email} is used already."
+            raise CtlError(msg) from err
         changed = cur.rowcount
-    conn.commit()
+        conn.commit()
     if not changed:
         msg = f"No user with the e-mail {args.email}."
         raise CtlError(msg)
     out(f"the password of {args.new_email or args.email} is set")
     return 0
+
+
+def bcrypt_rounds(value: str) -> int:
+    """Return the number of rounds of bcrypt, 4 to 31."""
+    try:
+        number = int(value)
+    except ValueError:
+        number = 0
+    if not 4 <= number <= 31:  # noqa: PLR2004
+        msg = "must be a number from 4 to 31"
+        raise ArgumentTypeError(msg)
+    return number
 
 
 def parser() -> ArgumentParser:
@@ -315,7 +361,7 @@ def parser() -> ArgumentParser:
                  sub.choices["user:set-password"]):
         item.add_argument("--password-stdin", action="store_true",
                           help="read the password from the standard input")
-        item.add_argument("--rounds", type=int, default=12,
+        item.add_argument("--rounds", type=bcrypt_rounds, default=12,
                           help="rounds of the hashing (default: 12)")
     return root
 

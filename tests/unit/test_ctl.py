@@ -128,3 +128,36 @@ def test_run_exits_with_the_code():
             pytest.raises(SystemExit) as exit_info:
         ctl.run()
     assert exit_info.value.code == 0
+
+
+@pytest.mark.parametrize("value", ["0", "3", "32", "many"])
+def test_wrong_rounds(value, capsys):
+    with pytest.raises(SystemExit):
+        ctl.parser().parse_args(["user:set-password", "--rounds", value])
+    assert "from 4 to 31" in capsys.readouterr().err
+
+
+def test_backup_file_is_private(tmp_path):
+    target = tmp_path / "dump.sql"
+    conf = {"host": "h", "port": 1, "user": "u", "charset": "c",
+            "database": "d"}
+    with patch("subprocess.run"):
+        ctl.backup(conf, target)
+    assert target.stat().st_mode & 0o777 == 0o600
+
+
+def test_statements_ignore_comment_after_statement():
+    sql = "ALTER TABLE t ADD c INT; -- note\nDROP TABLE x;\n"
+    assert ctl.statements(sql) == ["ALTER TABLE t ADD c INT;",
+                                   "DROP TABLE x;"]
+
+
+def test_statements_keep_lines_with_strings():
+    sql = "INSERT INTO t VALUES ('a; -- b');\n"
+    assert ctl.statements(sql) == ["INSERT INTO t VALUES ('a; -- b');"]
+
+
+def test_read_ini_removes_quotes(tmp_path):
+    ini = tmp_path / "uwsgi.ini"
+    ini.write_text("env = app_db='mysql://u:p@h/d'\n")
+    assert ctl.read_ini(str(ini)) == {"app_db": "mysql://u:p@h/d"}
