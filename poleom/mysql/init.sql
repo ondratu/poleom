@@ -11,7 +11,8 @@ CREATE TABLE users (
     user_id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(200) NOT NULL,
-    password CHAR(64) NOT NULL,
+    password CHAR(64) DEFAULT NULL,  -- NULL: login by the auth backend only
+    auth_sub VARCHAR(255) DEFAULT NULL,  -- id at the auth backend
     signature VARCHAR(255) DEFAULT NULL,
     terms TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     state ENUM("ACTIVE", "REGISTERED", "BANNED", "DELETED") NOT NULL,
@@ -19,7 +20,8 @@ CREATE TABLE users (
     data JSON NOT NULL,
 
     PRIMARY KEY user_id_pk (user_id),
-    UNIQUE KEY email_uk (email)
+    UNIQUE KEY email_uk (email),
+    UNIQUE KEY auth_sub_uk (auth_sub)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE change_request (

@@ -46,7 +46,15 @@ For administrators
 - The default of ``app_theme`` is the directory of the installed package, it
   was ``./poleom`` in the current directory. Set ``app_theme`` explicitly if
   you run a modified copy of the templates.
-- No database migration.
+- Database migration: the table ``users`` gets the column ``auth_sub`` for
+  the users of an external authentication plugin and the password may be
+  ``NULL``. Run it once, the forum works the same as before:
+
+  .. code-block:: sql
+
+      ALTER TABLE users MODIFY password CHAR(64) DEFAULT NULL,
+          ADD COLUMN auth_sub VARCHAR(255) DEFAULT NULL,
+          ADD UNIQUE KEY auth_sub_uk (auth_sub);
 
 0.1.0 - 2026-09-04
 ==================
