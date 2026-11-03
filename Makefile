@@ -7,6 +7,7 @@ install:
 
 test:
 	$(PYTHON) -m pytest
+	$(PYTHON) tools/check-coverage.py
 
 lint:
 	.venv/bin/ruff check poleom tests
