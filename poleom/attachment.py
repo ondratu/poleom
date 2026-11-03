@@ -1,4 +1,4 @@
-"""Enpoints for attachments."""
+"""Endpoints for attachments."""
 from os import path
 
 from poorwsgi import state

@@ -109,7 +109,7 @@ class ChangeRequest:
             subject = f"Reset password request from {app.title}"
             template = "user/reset-password-request.jinja"
         elif self.state == ChangeRequest.State.INFO_CHANGED:
-            subject = f"Credetials for {app.title} changed"
+            subject = f"Credentials for {app.title} changed"
             template = "user/changed.jinja"
         elif self.state == ChangeRequest.State.INFO_BANNED:
             subject = f"Your account on {app.title} was banned"

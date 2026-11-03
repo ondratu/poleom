@@ -26,7 +26,7 @@ class Pager:
 
     @property
     def page(self):
-        """Return acutal page number."""
+        """Return actual page number."""
         return int(self.offset / self.limit)
 
     @property

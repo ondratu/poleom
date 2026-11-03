@@ -191,7 +191,8 @@ class User:
                         row["password"].encode("utf-8")):
                     return None
             except ValueError:
-                return None  # Invalid salt means no or corupted password in DB
+                # Invalid salt means no or corrupted password in DB
+                return None
             return User.from_row(row)
 
     def delete(self, conn: Connection):
