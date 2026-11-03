@@ -89,6 +89,7 @@ format = [
 
 test = [
     "pytest",
+    "pytest-cov",
     "pytest-doctestplus",
     "pytest-dotenv"
 ]
@@ -179,6 +180,28 @@ ignore = ["wizard.py"]
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = ["fixme", "too-few-public-methods"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--doctest-plus",
+  "--ignore=poleom/main.py",
+  "--ignore=poleom/__main__.py",
+  "--ignore=poleom/wizard.py",  # unfinished, not imported by the app
+  "--cov=poleom",
+  "--cov-report=term-missing",
+  "--cov-report=xml:coverage.xml",
+]
+testpaths = ["poleom", "tests"]
+
+[tool.coverage.run]
+source = ["poleom"]
+branch = true
+
+[tool.coverage.report]
+# A ratchet: raise the number when the coverage grows, never lower it.
+fail_under = 38
 
 [tool.mypy]
 # unfinished, remove when poleom/wizard.py is done

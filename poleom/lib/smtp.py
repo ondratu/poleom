@@ -3,14 +3,16 @@
 Typical use of library could be check, if input email is correct, and send
 email by Smtp class.
 
->>> from polem.lib.smtp import Smtp, Email
->>> smtp = Smtp('smtp://localhost/no-replay@domain.xy')
->>> recipient = get_recipient()     # as get_recipient is your function
->>> if Email.check(recipient):
->>>     try:
->>>         smtp.send_email('Subject', recipient, 'Mail body')
->>>     except SMTPException as e:
->>>         print('Something wrong: %s' % e)
+Example::
+
+    from poleom.lib.smtp import Smtp, Email
+    smtp = Smtp('smtp://localhost/no-replay@domain.xy')
+    recipient = get_recipient()     # as get_recipient is your function
+    if Email.check(recipient):
+        try:
+            smtp.send_email('Subject', recipient, 'Mail body')
+        except SMTPException as e:
+            print('Something wrong: %s' % e)
 """
 
 import logging
