@@ -69,6 +69,9 @@
           <div class="menu" data="account">
             <a href="/user/profile?lang={{ lang }}">Profile</a>
             <a href="/user/account?lang={{ lang }}">Settings</a>
+          {%- if not auth.local and auth.profile_url %}
+            <a href="{{ auth.profile_url }}">Account</a>
+          {%- endif %}
             <hr/>
           {%- if me.is_moderator() %}
             <a href="/sections?lang={{ lang }}">Sections</a>
@@ -81,8 +84,10 @@
           </div>
         </div>
       {%- elif notheader is not defined %}
-        <a href="/login?lang={{ lang }}" class="button">Log in</a>
-        <a href="/signup?lang={{ lang }}" class="button">Sign up</a>
+        <a href="{{ auth.login_url }}" class="button">Log in</a>
+      {%- if auth.signup_url %}
+        <a href="{{ auth.signup_url }}" class="button">Sign up</a>
+      {%- endif %}
       {%- else %}
         <div>&nbsp;</div>
       {%- endif %}

@@ -2,7 +2,7 @@
 from functools import wraps
 
 from poorwsgi import state
-from poorwsgi.response import abort
+from poorwsgi.response import RedirectResponse, abort
 from poorwsgi.session import PoorSession
 
 from .auth_backend import local_session
@@ -26,6 +26,16 @@ def create_login_cookie(user_id: int) -> PoorSession:
     session = local_session(app.secret_key)
     session.data["user_id"] = user_id
     return session
+
+
+def local_login_only(fun):
+    """Redirect to the auth backend when the local login is turned off."""
+    @wraps(fun)
+    def handler(req, *args, **kwargs):
+        if not app.auth_backend.allows_local_login:
+            return RedirectResponse(app.auth_backend.login_url(req, "/"))
+        return fun(req, *args, **kwargs)
+    return handler
 
 
 def auth_user(role: User.Role = User.Role.MEMBER):
