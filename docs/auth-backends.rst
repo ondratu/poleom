@@ -6,6 +6,9 @@ By default Poleom keeps its own accounts and passwords. An *authentication
 backend* is a small plugin which lets an external service (a single sign-on
 server, Google, ...) log the users in instead. Only one backend is active.
 
+See also `README.rst`_ (installation, upgrade and configuration of the
+forum), `CONTRIBUTING.rst`_ (code and tests) and `ChangeLog.rst`_.
+
 How it works
 ============
 
@@ -142,7 +145,7 @@ Database
 The schema has ``users.auth_sub VARCHAR(255) NULL UNIQUE`` and
 ``users.password`` may be ``NULL``. There is no migration tool, the upgrade
 of an existing database is ``poleom/mysql/migrations/0.2.0.sql``, see
-"Upgrade" in ``README.rst``.
+"Upgrade" in `README.rst`_.
 
 Tests
 =====
@@ -150,3 +153,7 @@ Tests
 Test a backend without the network.
 ``tests/integrity/test_endpoint_external_auth.py`` shows a fake backend;
 the ``client`` fixture runs the whole application with it.
+
+.. _README.rst: ../README.rst
+.. _CONTRIBUTING.rst: ../CONTRIBUTING.rst
+.. _ChangeLog.rst: ../ChangeLog.rst

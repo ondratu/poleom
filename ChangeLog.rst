@@ -6,7 +6,7 @@ Changes of Poleom by release, the newest is on top. Every release has two
 parts: what **users** of the forum can see and what **administrators** have
 to know or do when they install or upgrade it (new or changed options,
 database migrations, new requirements, removed features). See
-``CONTRIBUTING.rst`` for the rules of writing it.
+`CONTRIBUTING.rst`_ for the rules of writing it.
 
 Unreleased
 ==========
@@ -43,20 +43,20 @@ For administrators
   rendered safely.
 - The package can be installed into a virtual environment now (``pip install
   poleom-*.whl``): it contains the templates, static files and SQL schemas.
-  See "Installation" in ``README.rst``.
+  See "Installation" in `README.rst`_.
 - New command ``poleom-passwd`` generates the SQL to set the password of
   the first administrator.
 - The default of ``app_theme`` is the directory of the installed package, it
   was ``./poleom`` in the current directory. Set ``app_theme`` explicitly if
   you run a modified copy of the templates.
 - New option ``app_auth_backend`` selects an authentication plugin, see
-  ``docs/auth-backends.rst``. Without it nothing changes. With a plugin the
+  `docs/auth-backends.rst`_. Without it nothing changes. With a plugin the
   registration, the login by the password, the reset of the password and
   the change of the e-mail of the forum are turned off.
 - Database migration: the table ``users`` gets the column ``auth_sub`` for
   the users of an external authentication plugin and the password may be
   ``NULL``. Run ``poleom/mysql/migrations/0.2.0.sql`` once, see "Upgrade" in
-  ``README.rst``. The forum works the same as before.
+  `README.rst`_. The forum works the same as before.
 
 0.1.0 - 2026-09-04
 ==================
@@ -84,5 +84,10 @@ For administrators
   ``root@localhost`` has no password, set it directly in the database.
 - Configured by the ``app_*`` environment variables (``app_db``,
   ``app_secret_key``, ``app_smtp``, ``app_attachments``, ``app_theme``,
-  ``app_default_lang``, ...), see ``README.rst``. Uploaded files are stored in
+  ``app_default_lang``, ...), see `README.rst`_. Uploaded files are stored in
   the ``app_attachments`` directory, which must be writable.
+
+
+.. _CONTRIBUTING.rst: CONTRIBUTING.rst
+.. _README.rst: README.rst
+.. _docs/auth-backends.rst: docs/auth-backends.rst
