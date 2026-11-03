@@ -38,7 +38,7 @@ class Language:
             cond = "WHERE active=1"
         with conn.cursor(DictCursor) as cur:
             # ruff: noqa: S608
-            cur.execute(f"SELECT * FROM languages ORDER BY lang {cond}")
+            cur.execute(f"SELECT * FROM languages {cond} ORDER BY lang")
             result = {}
             for row in cur:
                 result[row["lang"]] = Language.from_row(row)
