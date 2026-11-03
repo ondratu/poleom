@@ -6,7 +6,7 @@ from poorwsgi.request import Request
 from poorwsgi.response import RedirectResponse
 from poorwsgi.session import PoorSession, SessionError
 
-from poleom.lib.auth import create_login_cookie
+from poleom.lib.auth import check_login_cookie, create_login_cookie
 from poleom.lib.auth_backend import AuthBackend, Identity
 from poleom.lib.core import app
 from poleom.lib.user import User
@@ -25,7 +25,7 @@ class FakeBackend(AuthBackend):
         return "/fake-login"
 
     def logout(self, req):
-        return RedirectResponse("/")
+        return RedirectResponse("/fake-logout")
 
 
 def make_request(db, cookie=""):
@@ -119,3 +119,37 @@ def test_local_logout_invalid_session(db):
         res = app.auth_backend.logout(make_request(db))
 
     assert res.headers["Location"] == "/"
+
+
+@check_login_cookie
+def whoami(req):
+    return req.user
+
+
+def test_decorator_uses_backend(db):
+    backend = FakeBackend(Identity("1", "Ann", "ann@example.com"))
+
+    with patch.object(app, "auth_backend", backend):
+        user = whoami(make_request(db))
+
+    assert user.auth_sub == "1"
+
+
+def test_decorator_ignores_banned_user(db):
+    backend = FakeBackend(Identity("1", "Ann", "ann@example.com"))
+    user = backend.load_user(make_request(db))
+    user.state = User.State.BANNED
+    user.update(db)
+
+    with patch.object(app, "auth_backend", backend):
+        req = make_request(db)
+        req.user = None
+        assert whoami(req) is None
+
+
+def test_logout_endpoint_uses_backend(client):
+    with patch.object(app, "auth_backend", FakeBackend()):
+        res = client.get("/logout")
+
+    assert res.status == 302
+    assert res.headers["Location"] == "/fake-logout"
