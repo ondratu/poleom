@@ -14,7 +14,7 @@ for required in \
     poleom/mysql/init.sql \
     poleom/mysql/migrations/0.2.0.sql \
     poleom/sqlite/init.sql \
-    poleom/passwd_bcrypt.py \
+    poleom/ctl.py \
     poleom/py.typed; do
   if ! echo "$files" | grep -qx "$required"; then
     echo "missing in the wheel: $required" >&2
