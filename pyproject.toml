@@ -61,6 +61,7 @@ include-package-data = false
   "templates/**/*.jinja",
   "templates/**/*.xml",
   "mysql/*.sql",
+  "mysql/migrations/*.sql",
   "sqlite/*.sql",
 ]
 

@@ -141,7 +141,8 @@ Database
 
 The schema has ``users.auth_sub VARCHAR(255) NULL UNIQUE`` and
 ``users.password`` may be ``NULL``. There is no migration tool, the upgrade
-of an existing database is the SQL in the ``ChangeLog.rst``.
+of an existing database is ``poleom/mysql/migrations/0.2.0.sql``, see
+"Upgrade" in ``README.rst``.
 
 Tests
 =====

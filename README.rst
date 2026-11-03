@@ -149,6 +149,33 @@ prefix. When uWSGI is used, they are set with ``env =`` in the ini file.
 ``app_debug`` (``False``)
     ``True`` turns on debug mode
 
+Upgrade
+~~~~~~~
+
+Install the new version (see above) and stop uWSGI. The changes of the
+database schema are SQL files in ``poleom/mysql/migrations/`` of the installed
+package, named by the version which needs them (``0.2.0.sql``).
+``ChangeLog.rst`` says which release has a migration. Run the files of all
+versions **newer than the one you upgrade from**, up to the new one, in the
+version order, each only once:
+
+.. code-block:: sh
+
+    cd venv/lib/python3.*/site-packages/poleom/mysql/migrations
+    mysql poleom < 0.2.0.sql
+
+For example, an upgrade from 0.1.0 to 0.3.0 runs ``0.2.0.sql`` and then
+``0.3.0.sql``. A new installation loads only ``init.sql``. Back up the
+database before the upgrade.
+
+External authentication
+~~~~~~~~~~~~~~~~~~~~~~~
+
+By default the forum has its own accounts. The users can be logged in by
+an external service instead, with a plugin set by ``app_auth_backend``.
+How the plugin works and how to configure it is described in
+``docs/auth-backends.rst``; how to write one is in ``CONTRIBUTING.rst``.
+
 Running
 -------
 

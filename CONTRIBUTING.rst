@@ -86,7 +86,32 @@ Database schema
 
 A change of the schema updates both ``poleom/mysql/init.sql`` and
 ``poleom/sqlite/init.sql`` (the latter is used by the tests) and describes
-how to upgrade an existing database.
+how to upgrade an existing database. There is no migration tool, a migration
+is a plain SQL file:
+
+* ``poleom/mysql/migrations/<version>.sql`` - the SQL which upgrades a database
+  of the previous release to this ``<version>`` (the one in ``Unreleased`` of
+  the ``ChangeLog.rst``, for example ``0.2.0.sql``). Start the file with a
+  comment of what it does. When the version already has a file, add the new
+  statements to it, so one version is one file,
+* the administrators run the files of all newer versions in the order of
+  versions, each once (see "Upgrade" in ``README.rst``), so a migration never
+  edits an older file and does not depend on data created by a later one,
+* the ``ChangeLog.rst`` item for administrators names the file instead of
+  repeating the SQL,
+* test the file against a real MySQL (``docker-mysql.sh``): load ``init.sql``
+  of the previous release, run the migration and compare the schema with
+  the new ``init.sql``.
+
+Authentication plugins
+----------------------
+
+A new authentication backend (SSO, Google, ...) is a class derived from
+``AuthBackend`` in ``poleom/lib/auth_backend.py``. The interface, the mapping
+of the user and an example are in ``docs/auth-backends.rst``; read it first.
+Test it as ``tests/integrity/test_endpoint_external_auth.py`` does, without
+the network, and document the options of the plugin (``app_*``) in
+``README.rst``.
 
 Configuration and documentation
 -------------------------------

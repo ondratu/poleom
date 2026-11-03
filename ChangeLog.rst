@@ -55,13 +55,8 @@ For administrators
   the change of the e-mail of the forum are turned off.
 - Database migration: the table ``users`` gets the column ``auth_sub`` for
   the users of an external authentication plugin and the password may be
-  ``NULL``. Run it once, the forum works the same as before:
-
-  .. code-block:: sql
-
-      ALTER TABLE users MODIFY password CHAR(64) DEFAULT NULL,
-          ADD COLUMN auth_sub VARCHAR(255) DEFAULT NULL,
-          ADD UNIQUE KEY auth_sub_uk (auth_sub);
+  ``NULL``. Run ``poleom/mysql/migrations/0.2.0.sql`` once, see "Upgrade" in
+  ``README.rst``. The forum works the same as before.
 
 0.1.0 - 2026-09-04
 ==================

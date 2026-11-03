@@ -12,6 +12,7 @@ for required in \
     poleom/templates/index.html \
     poleom/assets/css/poleom.css \
     poleom/mysql/init.sql \
+    poleom/mysql/migrations/0.2.0.sql \
     poleom/sqlite/init.sql \
     poleom/passwd_bcrypt.py \
     poleom/py.typed; do
