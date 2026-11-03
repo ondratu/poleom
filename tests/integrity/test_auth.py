@@ -1,5 +1,4 @@
 """Integrity tests of the login cookie and the authorization decorators."""
-from http.cookies import SimpleCookie
 from time import time
 from unittest.mock import patch
 
@@ -13,7 +12,6 @@ from poleom.lib.auth import (
     auth_user,
     check_login_cookie,
     create_login_cookie,
-    destroy_login_cookie,
 )
 from poleom.lib.user import User
 from poleom.main import application as app
@@ -52,25 +50,10 @@ def admin_only(req):
     return req.user
 
 
-def test_create_and_destroy_cookie():
+def test_create_cookie():
     session = create_login_cookie(7)
+
     assert session.data["user_id"] == 7
-
-    cookies = SimpleCookie()
-    session.write()
-    cookies.load(session.cookie.output(header="").strip())
-    destroyed = destroy_login_cookie(cookies)
-    assert destroyed.cookie  # expired cookie is sent to the browser
-
-
-def test_destroy_without_cookie():
-    assert destroy_login_cookie(SimpleCookie()) is not None
-
-
-def test_destroy_invalid_cookie():
-    cookies = SimpleCookie()
-    cookies.load("SID=invalid")
-    assert destroy_login_cookie(cookies) is not None
 
 
 def test_no_cookie_means_no_user(db):
@@ -124,11 +107,6 @@ def test_session_error_means_no_user(db):
     req = make_request(db)
     with patch.object(PoorSession, "load", side_effect=SessionError):
         assert whoami(req) is None
-
-
-def test_destroy_session_error():
-    with patch.object(PoorSession, "load", side_effect=SessionError):
-        assert destroy_login_cookie(SimpleCookie()) is not None
 
 
 def test_auth_not_active_user_is_forbidden(db, make_user):

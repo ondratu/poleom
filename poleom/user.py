@@ -13,7 +13,6 @@ from .lib.auth import (
     auth_user,
     check_login_cookie,
     create_login_cookie,
-    destroy_login_cookie,
 )
 from .lib.change_request import ChangeRequest
 from .lib.core import Request, app
@@ -64,11 +63,8 @@ def login(req):
 
 @app.route("/logout")
 def logout(req):
-    """Create login cookie."""
-    session = destroy_login_cookie(req.cookies)
-    res = RedirectResponse("/")
-    session.header(res)
-    return res
+    """Destroy the session by the auth backend."""
+    return app.auth_backend.logout(req)
 
 
 @app.route("/signup")
