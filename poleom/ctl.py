@@ -379,3 +379,7 @@ def main(argv: list[str] | None = None, out=print) -> int:
 def run() -> None:  # pragma: no cover
     """Entry point of the script."""
     raise SystemExit(main())
+
+
+if __name__ == "__main__":  # python -m poleom.ctl
+    run()

@@ -48,7 +48,8 @@ For administrators
   ``poleom-passwd``: it shows the version of the code and of the database,
   backs up the database, upgrades it with the migrations, and sets the
   password of the first administrator or of any user. It reads the database
-  from the uWSGI ini file. See "Administration" in `README.rst`_.
+  from the uWSGI ini file. ``python -m poleom.ctl`` runs it too. See
+  "Administration" in `README.rst`_.
 - The default of ``app_theme`` is the directory of the installed package, it
   was ``./poleom`` in the current directory. Set ``app_theme`` explicitly if
   you run a modified copy of the templates.
