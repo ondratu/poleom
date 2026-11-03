@@ -86,38 +86,24 @@ First administrator
 
 The schema contains the default administrator ``root@localhost`` with an empty
 password, so nobody can log in until you set one. Passwords are stored as
-bcrypt hashes (of the SHA3-512 digest of the password), so they can not be
-written to the database directly. The ``poleom-passwd`` command, which is
-installed with the package into the virtual environment, generates the SQL
-for you:
+bcrypt hashes, so they can not be written to the database directly. Use the
+``poleomctl`` command (see "Administration" below), which is installed with
+the package into the virtual environment. It asks for the password and the
+database is taken from the uWSGI configuration:
 
 .. code-block:: sh
 
-    venv/bin/poleom-passwd 'my secret password'
+    venv/bin/poleomctl --ini etc/uwsgi.ini user:set-password \
+        --new-email your@login
 
-The optional second argument is the number of hashing rounds (default 12).
-The output has two statements:
-
-.. code-block:: sql
-
-    -- First setup
-    UPDATE users SET password='$2b$12$...', email='your@login'
-        WHERE email='root@localhost';
-    -- Password reset --
-    UPDATE users SET password='$2b$12$...'
-        WHERE email='your@login';
-
-For the **first setup** replace ``your@login`` with the e-mail address of the
-administrator, then run the first statement in the database, for example
-``mysql poleom -e "UPDATE ..."``. The administrator then logs in with that
-e-mail and the password. The second statement resets a forgotten password of
-an existing user; use it only when the user can not use the password reset
-by e-mail.
-
-The password is visible in the process list and in the shell history. Run
-the command with a space in front of it (when ``HISTCONTROL=ignorespace`` is
-set) or remove it from the history afterwards, and use a temporary password
-which is changed after the first login in the account settings.
+The administrator then logs in with that e-mail and the password. Use
+a temporary password and change it after the first login in the account
+settings. The same command without ``--new-email`` and with ``--email`` sets
+a new password of an existing user, which can not use the password reset by
+e-mail. The command ``user:password-sql`` only prints the SQL statements, for
+a database which ``poleomctl`` can not reach. The password is never an
+argument of the command, it is read from the terminal or, with
+``--password-stdin``, from the standard input.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -155,18 +141,49 @@ Upgrade
 Install the new version (see above) and stop uWSGI. The changes of the
 database schema are SQL files in ``poleom/mysql/migrations/`` of the installed
 package, named by the version which needs them (``0.2.0.sql``).
-`ChangeLog.rst`_ says which release has a migration. Run the files of all
-versions **newer than the one you upgrade from**, up to the new one, in the
-version order, each only once:
+`ChangeLog.rst`_ says which release has a migration. The database stores
+the version of its schema, so ``poleomctl`` runs the migrations which are
+missing, in the order of versions, each only once, after a backup (dump) of
+the database:
 
 .. code-block:: sh
 
-    cd venv/lib/python3.*/site-packages/poleom/mysql/migrations
-    mysql poleom < 0.2.0.sql
+    venv/bin/poleomctl --ini etc/uwsgi.ini db:status    # what is pending
+    venv/bin/poleomctl --ini etc/uwsgi.ini db:upgrade   # backup + migrate
 
-For example, an upgrade from 0.1.0 to 0.3.0 runs ``0.2.0.sql`` and then
-``0.3.0.sql``. A new installation loads only ``init.sql``. Back up the
-database before the upgrade.
+A new installation loads only ``init.sql``. A database of 0.1.0 has no
+version stored, ``poleomctl`` takes it as 0.1.0. Start uWSGI after the
+upgrade.
+
+Administration
+~~~~~~~~~~~~~~
+
+The ``poleomctl`` command (like ``occ`` of Nextcloud) is installed into
+the virtual environment. The database is taken from ``--db DSN``, from
+the ``env = app_db=...`` line of the uWSGI ini file given by ``--ini``, or
+from the ``app_db`` environment variable, in this order. The commands are
+grouped by what they work with:
+
+``app:version``
+    version of the code and of the database schema it needs
+``db:version``
+    version of the database schema
+``db:status``
+    compares the database with the code, exit code 1 means that migrations
+    are pending
+``db:backup [FILE]``
+    dump of the database by ``mysqldump``, which has to be installed
+``db:upgrade``
+    backup (``--backup-dir DIR`` or ``--no-backup``) and the pending
+    migrations
+``user:set-password``
+    sets the password of the user ``--email`` (``root@localhost``), with
+    ``--new-email`` it changes the e-mail too
+``user:password-sql``
+    prints SQL statements which set the password
+
+``poleomctl --help`` lists the commands, ``poleomctl COMMAND --help`` their
+options.
 
 External authentication
 ~~~~~~~~~~~~~~~~~~~~~~~

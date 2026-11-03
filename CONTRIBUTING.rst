@@ -57,7 +57,7 @@ the environment (see `README.rst`_ for the list):
 
 The forum is then available at http://localhost:8000/. To log in as
 the default administrator ``root@localhost``, set its password with
-``poleom-passwd``, see "First administrator" in `README.rst`_.
+``poleomctl user:set-password``, see "First administrator" in `README.rst`_.
 
 Code changes
 ============
@@ -87,21 +87,34 @@ Database schema
 A change of the schema updates both ``poleom/mysql/init.sql`` and
 ``poleom/sqlite/init.sql`` (the latter is used by the tests) and describes
 how to upgrade an existing database. There is no migration tool, a migration
-is a plain SQL file:
+is a plain SQL file, run by ``poleomctl db:upgrade`` (``poleom/ctl.py``):
 
 * ``poleom/mysql/migrations/<version>.sql`` - the SQL which upgrades a database
   of the previous release to this ``<version>`` (the one in ``Unreleased`` of
   the `ChangeLog.rst`_, for example ``0.2.0.sql``). Start the file with a
   comment of what it does. When the version already has a file, add the new
   statements to it, so one version is one file,
-* the administrators run the files of all newer versions in the order of
-  versions, each once (see "Upgrade" in `README.rst`_), so a migration never
-  edits an older file and does not depend on data created by a later one,
+* a statement ends with ``;`` at the end of a line and the file has no ``;``
+  inside strings, the command splits the file by that. Comments start with
+  ``--`` on their own line,
+* the database stores the version of its schema in the table ``meta``
+  (``schema_version``). The command runs the files newer than that, in the
+  order of versions, each once, and writes the version after each file. So
+  a migration never edits an older file and does not depend on data created
+  by a later one,
+* a new schema version also changes the version inserted at the end of
+  the ``meta`` table definition in both ``init.sql`` files, to the version
+  of the newest migration. A test checks it. A release without a change of
+  the schema has no migration and no new version,
 * the `ChangeLog.rst`_ item for administrators names the file instead of
   repeating the SQL,
 * test the file against a real MySQL (``docker-mysql.sh``): load ``init.sql``
-  of the previous release, run the migration and compare the schema with
-  the new ``init.sql``.
+  of the previous release, run ``poleomctl db:upgrade`` and compare the
+  schema with the new ``init.sql``.
+
+New commands of ``poleomctl`` are functions ``cmd_<group>_<name>`` registered
+in ``parser()``. They print through ``out`` and return the exit code, so the
+tests call ``main()`` without a terminal.
 
 Authentication plugins
 ----------------------

@@ -44,8 +44,11 @@ For administrators
 - The package can be installed into a virtual environment now (``pip install
   poleom-*.whl``): it contains the templates, static files and SQL schemas.
   See "Installation" in `README.rst`_.
-- New command ``poleom-passwd`` generates the SQL to set the password of
-  the first administrator.
+- New command ``poleomctl`` (like ``occ`` of Nextcloud) replaces
+  ``poleom-passwd``: it shows the version of the code and of the database,
+  backs up the database, upgrades it with the migrations, and sets the
+  password of the first administrator or of any user. It reads the database
+  from the uWSGI ini file. See "Administration" in `README.rst`_.
 - The default of ``app_theme`` is the directory of the installed package, it
   was ``./poleom`` in the current directory. Set ``app_theme`` explicitly if
   you run a modified copy of the templates.
@@ -55,8 +58,10 @@ For administrators
   the change of the e-mail of the forum are turned off.
 - Database migration: the table ``users`` gets the column ``auth_sub`` for
   the users of an external authentication plugin and the password may be
-  ``NULL``. Run ``poleom/mysql/migrations/0.2.0.sql`` once, see "Upgrade" in
-  `README.rst`_. The forum works the same as before.
+  ``NULL``, and the new table ``meta`` stores the version of the schema. Run
+  ``poleomctl db:upgrade`` (it applies ``poleom/mysql/migrations/0.2.0.sql``
+  after a backup), see "Upgrade" in `README.rst`_. The forum works the same
+  as before.
 
 0.1.0 - 2026-09-04
 ==================
