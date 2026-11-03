@@ -29,7 +29,7 @@ class File:
             self.file.seek(0, os.SEEK_END)
             return self.file.tell()
         finally:
-            self.file.seek(0, pos)
+            self.file.seek(pos)
 
 
 @dataclass

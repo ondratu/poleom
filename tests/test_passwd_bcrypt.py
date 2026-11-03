@@ -6,7 +6,7 @@ import bcrypt
 
 from poleom.passwd_bcrypt import main, password_hash
 
-PASSWORD = "Str0ngPassw0rd"  # noqa: S105 -- test fixture, not a secret
+PASSWORD = "Str0ngPassw0rd"
 
 
 def test_hash_matches_application_format():

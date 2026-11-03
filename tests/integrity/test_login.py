@@ -7,7 +7,7 @@ import pytest
 from poleom.lib.sqlite import DictCursor
 from poleom.lib.user import User
 
-PASSWORD = "Str0ngPassw0rd"  # noqa: S105 -- test fixture, not a secret
+PASSWORD = "Str0ngPassw0rd"
 
 
 @pytest.fixture(autouse=True)
