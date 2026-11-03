@@ -35,7 +35,7 @@ def check_modified(headers: Headers, last_modified: int):
 
 
 def render_response(template: str, req: Request, **kwargs):
-    """Call render template and add some aditional values from request.
+    """Call render template and add some additional values from request.
 
     It sets / fill next attributes
     * me from req.user
