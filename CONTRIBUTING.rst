@@ -74,8 +74,9 @@ the ini file of the development server to give it the database:
         --new-email you@example.com
 
 ``python -m poleom.ctl`` is the same command and works without the
-installed script, from the checkout. The script is made when the package is
-installed, so after you pull a version which has a new one, or when
+installed script, from the checkout, in the virtual environment with the
+dependencies of the project (``make install``). The script is made when the
+package is installed, so after you pull a version which has a new one, or when
 ``.venv/bin/poleomctl`` is missing, run ``make install`` again. Without
 ``--ini`` the database is taken from ``--db DSN`` or from the ``app_db``
 variable, as for ``python -m poleom``. ``db:backup`` and ``db:upgrade`` need
