@@ -31,6 +31,12 @@ For users
 - Fixed: the time of the validity of the e-mail links (registration, password
   reset) and the times of posts were wrong on servers which do not run in
   the UTC time zone.
+- Fixed: when the mail server was not reachable, the registration, the
+  password reset and the other actions which send an e-mail ended with the
+  error page "502 Bad Gateway" (after the account was already created). Now
+  the action is done and the page tells that the e-mail could not be sent.
+- A user who did not get the confirmation e-mail of the registration can ask
+  for it again.
 - Fixed typos in the e-mail about the enabled account, in the e-mail about
   the password reset and in the section form.
 

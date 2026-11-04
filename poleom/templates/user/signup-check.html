@@ -4,7 +4,22 @@
 
     <h2>Sign up</h2>
 
+    {% if sent is not defined or sent %}
     <p class="signup">Please check your email inbox, and confirm registration
       by click the link in mail from {{ sender }}.</p>
+    {% else %}
+    <p class="signup error">Your account was created, but the confirmation
+      email could not be sent. Please try again later or contact the
+      administrator.</p>
+    {% endif %}
+
+    {% if email %}
+    <form class="form signup" method="post" action="/signup/resend?lang={{ lang }}">
+      <input name="email" type="hidden" value="{{ email }}"/>
+      <div class="buttons">
+        <input value="Send confirmation email again" type="submit"/>
+      </div>
+    </form>
+    {% endif %}
 
 {% include("_footer.html") %}

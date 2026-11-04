@@ -1,10 +1,13 @@
 """Integrity tests of the endpoints in user.py."""
 import re
 from datetime import UTC, datetime, timedelta
+from smtplib import SMTPException
+from unittest.mock import patch
 
 import pytest
 
 from poleom.lib.change_request import ChangeRequest
+from poleom.lib.core import app
 from poleom.lib.user import User
 
 PASSWORD = "Str0ngPassw0rd"
@@ -100,6 +103,65 @@ class TestSignup:
         assert user.state is User.State.REGISTERED
         assert outbox[-1][1] == "alice@example.com"
 
+    def test_mail_server_failure(self, client, db):
+        with patch.object(app.smtp, "send_email_txt",
+                          side_effect=SMTPException):
+            result = client.post("/signup", form=signup_form())
+
+        assert result.status == 200
+        assert "could not be sent" in result.text
+        assert User.find(db, "alice@example.com") is not None
+
+    def test_resend_confirmation(self, client, db, outbox):
+        client.post("/signup", form=signup_form())
+        outbox.clear()
+
+        result = client.post("/signup/resend",
+                             form={"email": "alice@example.com"})
+
+        assert result.status == 200
+        assert outbox[-1][1] == "alice@example.com"
+        client.get(f"/c/{token(outbox)}")
+        user = User.find(db, "alice@example.com")
+        assert user.state is User.State.ACTIVE
+
+    def test_resend_after_mail_server_failure(self, client, outbox):
+        with patch.object(app.smtp, "send_email_txt",
+                          side_effect=SMTPException):
+            client.post("/signup", form=signup_form())
+
+        result = client.post("/signup/resend",
+                             form={"email": "alice@example.com"})
+
+        assert result.status == 200
+        assert "could not be sent" not in result.text
+        assert outbox[-1][1] == "alice@example.com"
+
+    def test_resend_failure_again(self, client, db, outbox):
+        client.post("/signup", form=signup_form())
+
+        with patch.object(app.smtp, "send_email_txt",
+                          side_effect=SMTPException):
+            result = client.post("/signup/resend",
+                                 form={"email": "alice@example.com"})
+
+        assert "could not be sent" in result.text
+
+    @pytest.mark.parametrize("email", ["", "invalid", "nobody@example.com"])
+    def test_resend_to_unknown_email_sends_nothing(self, client, outbox,
+                                                   email):
+        result = client.post("/signup/resend", form={"email": email})
+
+        assert result.status == 200
+        assert not outbox
+
+    def test_resend_to_active_user_sends_nothing(self, client, member,
+                                                 outbox):
+        result = client.post("/signup/resend", form={"email": member.email})
+
+        assert result.status == 200
+        assert not outbox
+
     def test_confirmation_activates_and_logs_in(self, client, db, outbox):
         client.post("/signup", form=signup_form())
 
@@ -185,6 +247,16 @@ class TestResetPassword:
         assert User.find(db, member.email, NEW_PASSWORD) is not None
         assert User.find(db, member.email, PASSWORD) is None
 
+    def test_mail_server_failure(self, client, member):
+        with patch.object(app.smtp, "send_email_txt",
+                          side_effect=SMTPException):
+            result = client.post("/user/reset-password",
+                                 form={"email": member.email})
+
+        assert result.status == 200
+        assert "could not be sent" in result.text
+        assert "<form" in result.text
+
     @pytest.mark.parametrize("email", ["", "invalid", "nobody@example.com"])
     def test_invalid_email(self, client, outbox, email):
         result = client.post("/user/reset-password", form={"email": email})
@@ -226,9 +298,20 @@ class TestAccount:
 
         assert result.status == 302
         assert result.headers["Location"].endswith("#save-done")
+
         stored = User.get(db, member.id)
         assert (stored.name, stored.signature) == ("New Name", "Cheers")
         assert not outbox  # no credentials were changed
+
+    def test_notification_failure_is_reported(self, client, member):
+        with patch.object(app.smtp, "send_email_txt",
+                          side_effect=SMTPException):
+            result = client.login(member).post("/user/account", form={
+                "name": member.name, "email": "new@example.com",
+                "signature": ""})
+
+        assert result.status == 302
+        assert result.headers["Location"].endswith("#save-done-nomail")
 
     def test_change_email_and_password_notifies(self, client, db, member,
                                                 outbox):

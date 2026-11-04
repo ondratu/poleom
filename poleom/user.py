@@ -1,4 +1,6 @@
 """User / Account / Auth routes."""
+import logging
+from smtplib import SMTPException
 from urllib import parse
 
 from poorwsgi import abort, redirect, state
@@ -22,6 +24,22 @@ from .lib.pager import Pager
 from .lib.response import render_response
 from .lib.smtp import Email
 from .lib.user import User
+
+
+def _notify(change_request, user, url="") -> bool:
+    """Send the change request email, return False if it was not sent.
+
+    A mail server failure must not break the request (and end with 502).
+    """
+    try:
+        change_request.send_email(app.smtp, user, url)
+    except SMTPException as exc:
+        # the traceback was already logged by the Smtp class
+        logging.getLogger(__name__).warning(
+            "Email of change request %s to user %s was not sent: %s",
+            change_request.state, user.id, exc)
+        return False
+    return True
 
 
 @app.route("/login")
@@ -146,10 +164,42 @@ def signup(req):
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
         })
-    change_request.send_email(app.smtp, user, req.construct_url(""))
+    sent = _notify(change_request, user, req.construct_url(""))
 
-    return render_response("user/signup-check.html", req,
-                           sender=app.smtp.sender)
+    return render_response("user/signup-check.html",
+                           req,
+                           sender=app.smtp.sender,
+                           email=email,
+                           sent=sent)
+
+
+@app.route("/signup/resend", method=state.METHOD_POST)
+@local_login_only
+def signup_resend(req):
+    """Send the confirmation email again to a not yet confirmed account.
+
+    The answer is the same for any email, so the route does not tell,
+    which accounts exist.
+    """
+    lang = req.args.get("lang", app.default_lang)
+    req.lang = lang
+
+    email = req.form.get("email", "").strip()
+    sent = True
+    user = User.find(req.db, email) if Email.check(email) else None
+    if user and user.state == User.State.REGISTERED:
+        change_request = ChangeRequest.create(
+            req.db, user.id, ChangeRequest.State.REGISTER, {
+                "request_ip": req.remote_addr,
+                "request_browser": req.user_agent,
+            })
+        sent = _notify(change_request, user, req.construct_url(""))
+
+    return render_response("user/signup-check.html",
+                           req,
+                           sender=app.smtp.sender,
+                           email=email,
+                           sent=sent)
 
 
 @app.route("/user/profile")
@@ -225,6 +275,7 @@ def user_account_set(req):
 
     req.user.update(req.db, password=password)
 
+    notified = True
     if to_request:
         data = {
             "request_ip": req.remote_addr,
@@ -238,9 +289,11 @@ def user_account_set(req):
         change_request = ChangeRequest.create(req.db, req.user.id,
                                               ChangeRequest.State.INFO_CHANGED,
                                               data)
-        change_request.send_email(app.smtp, req.user, req.construct_url(""))
+        notified = _notify(change_request, req.user, req.construct_url(""))
 
-    return RedirectResponse(f"/user/account?lang={lang}#save-done")
+    # the change is saved, only the notification email could fail
+    done = "save-done" if notified else "save-done-nomail"
+    return RedirectResponse(f"/user/account?lang={lang}#{done}")
 
 
 @app.route("/user/reset-password", method=state.METHOD_GET_POST)
@@ -275,9 +328,12 @@ def reset_password_request(req: Request):
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
         })
-    change_request.send_email(app.smtp, user, req.construct_url(""))
+    sent = _notify(change_request, user, req.construct_url(""))
 
-    return render_response("user/reset-password-request.html", req, sent=True)
+    return render_response("user/reset-password-request.html",
+                           req,
+                           sent=sent,
+                           failed=not sent)
 
 
 @app.route("/c/<hexdigest:hex>")
@@ -411,7 +467,7 @@ def user_ban(req, user_id: int):
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
         })
-    change_request.send_email(app.smtp, user)
+    _notify(change_request, user)
 
     return NoContentResponse()
 
@@ -435,7 +491,7 @@ def user_unban(req, user_id: int):
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
         })
-    change_request.send_email(app.smtp, user)
+    _notify(change_request, user)
 
     return NoContentResponse()
 
@@ -476,7 +532,7 @@ def user_delete(req, user_id: int):
             "request_ip": req.remote_addr,
             "request_browser": req.user_agent,
         })
-    change_request.send_email(app.smtp, user)
+    _notify(change_request, user)
     user.delete(req.db)
 
     return NoContentResponse()
