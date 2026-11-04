@@ -71,6 +71,10 @@
           (new Message('Account settings is saved'))
                   .insertBefore('.footer');
       };
+    if (document.location.hash == '#save-done-nomail'){
+          (new Message('Account settings is saved, but the notification email could not be sent'))
+                  .insertBefore('.footer');
+      };
 
     });
   </script>
