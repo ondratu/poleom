@@ -381,5 +381,5 @@ def run() -> None:  # pragma: no cover
     raise SystemExit(main())
 
 
-if __name__ == "__main__":  # python -m poleom.ctl
+if __name__ == "__main__":  # pragma: no cover - python -m poleom.ctl
     run()

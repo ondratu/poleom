@@ -1,6 +1,5 @@
 """Tests of the poleomctl commands which do not need the database."""
 import re
-import runpy
 import subprocess
 import sys
 from hashlib import sha3_512
@@ -131,14 +130,13 @@ def test_run_exits_with_the_code():
     assert exit_info.value.code == 0
 
 
-@pytest.mark.filterwarnings("ignore:.*found in sys.modules:RuntimeWarning")
-def test_python_m_runs_the_command(capsys):
+def test_python_m_runs_the_command():
     """`python -m poleom.ctl` is the same as `poleomctl`."""
-    with patch("sys.argv", ["poleom.ctl", "app:version"]), \
-            pytest.raises(SystemExit) as exit_info:
-        runpy.run_module("poleom.ctl", run_name="__main__")
-    assert exit_info.value.code == 0
-    assert capsys.readouterr().out.startswith(ctl.__version__)
+    result = subprocess.run(
+        [sys.executable, "-m", "poleom.ctl", "app:version"],
+        capture_output=True, text=True, check=False)
+    assert result.returncode == 0
+    assert result.stdout.startswith(ctl.__version__)
 
 
 @pytest.mark.parametrize("value", ["0", "3", "32", "many"])
