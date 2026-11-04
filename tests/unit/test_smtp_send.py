@@ -99,3 +99,12 @@ def test_send_alternative_without_login():
     smtp.send_email_alternative("S", "to@example.com", "T", "<p>H</p>")
 
     smtp._class.return_value.login.assert_not_called()
+
+
+def test_unreachable_server_is_smtp_exception(smtp):
+    smtp._class.side_effect = ConnectionRefusedError(111, "refused")
+
+    with pytest.raises(SMTPException):
+        smtp.send_email_txt("Subject", "to@example.com", "Body")
+    with pytest.raises(SMTPException):
+        smtp.send_email_alternative("S", "to@example.com", "T", "<p>H</p>")

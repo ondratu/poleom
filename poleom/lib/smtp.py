@@ -101,16 +101,7 @@ class Smtp:
         logger.info("SMTP: Sub:%s, From:%s, To:%s", msg["Subject"],
                     msg["From"], msg["To"])
 
-        smtp = self._class(self.host, self.port, timeout=self.timeout)
-        try:
-            if self.user:
-                smtp.login(self.user, self.passwd)
-            smtp.sendmail(msg["From"], msg["To"], msg.as_string())
-        except SMTPException:
-            logger.exception("SMTP: Sending email failed")
-            raise
-        finally:
-            smtp.close()
+        self._deliver(msg)
 
     def send_email_alternative(self, subject, recipient, txt_body, html_body,
                                **kwargs):
@@ -144,16 +135,30 @@ class Smtp:
         logger.info("SMTP: Sub:%s, From:%s, To:%s", msg["Subject"],
                     msg["From"], msg["To"])
 
-        smtp = self._class(self.host, self.port, timeout=self.timeout)
+        self._deliver(msg)
+
+    def _deliver(self, msg):
+        """Connect to the server and send the message.
+
+        Raise SMTPException on any failure, including an unreachable server
+        (OSError), so callers have one exception to handle.
+        """
+        smtp = None
         try:
+            smtp = self._class(self.host, self.port, timeout=self.timeout)
             if self.user:
                 smtp.login(self.user, self.passwd)
             smtp.sendmail(msg["From"], msg["To"], msg.as_string())
         except SMTPException:
-            logger.exception("SMTP: Sendig email failed")
+            logger.exception("SMTP: Sending email failed")
             raise
+        except OSError as exc:
+            logger.exception("SMTP: Sending email failed")
+            detail = f"{self}: {exc}"
+            raise SMTPException(detail) from exc
         finally:
-            smtp.close()
+            if smtp is not None:
+                smtp.close()
 
 
 # Regular expression for check valid email address
